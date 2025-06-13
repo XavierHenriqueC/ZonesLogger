@@ -46,6 +46,8 @@ const TemperatureSensor: React.FC = () => {
             BleManager.stopScan();
             connectToDevice(peripheral);
         }
+
+        console.log(peripheral)
         
     };
 
