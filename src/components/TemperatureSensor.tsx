@@ -74,7 +74,7 @@ const TemperatureSensor: React.FC = () => {
         if (scanning) return;
 
         setScanning(true);
-        BleManager.scan([], 5, true)
+        BleManager.scan([], 30, true)
             .then(() => {
                 console.log('Scan iniciado...');
             })
@@ -83,7 +83,7 @@ const TemperatureSensor: React.FC = () => {
                 setScanning(false);
             });
 
-        setTimeout(() => setScanning(false), 6000);
+        setTimeout(() => setScanning(false), 30000);
     };
 
     const connectToDevice = async (peripheral: Peripheral) => {
