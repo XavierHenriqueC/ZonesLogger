@@ -21,26 +21,44 @@ const SERVICE_UUID = '12345678-1234-1234-1234-1234567890ab';
 const CHARACTERISTIC_UUID = 'abcdef01-1234-1234-1234-abcdefabcdef';
 
 const TemperatureSensor: React.FC = () => {
+
+    const [bluetoothState, setBluetoothState] = useState<boolean>(false)
     const [connectedPeripheral, setConnectedPeripheral] = useState<Peripheral | null>(null);
     const [temperature, setTemperature] = useState<string | null>(null);
-    const [scanning, setScanning] = useState(false);
+    const [scanning, setScanning] = useState<boolean>(false);
 
     useEffect(() => {
         BleManager.start({ showAlert: false });
 
+        // Checa se bluetooth esta ligado
+        BleManager.checkState();
+
+        bleEmitter.addListener('BleManagerDidUpdateState', handleBluetoothStateChange);
         bleEmitter.addListener('BleManagerDiscoverPeripheral', handleDiscoverPeripheral);
         bleEmitter.addListener('BleManagerDisconnectPeripheral', handleDisconnectedPeripheral);
         bleEmitter.addListener('BleManagerDidUpdateValueForCharacteristic', handleUpdateValue);
 
         return () => {
+            bleEmitter.removeAllListeners('BleManagerDidUpdateState');
             bleEmitter.removeAllListeners('BleManagerDiscoverPeripheral');
             bleEmitter.removeAllListeners('BleManagerDisconnectPeripheral');
             bleEmitter.removeAllListeners('BleManagerDidUpdateValueForCharacteristic');
         };
+
     }, []);
 
+
+    const handleBluetoothStateChange = (args: { state: string }) => {
+        if (args.state === 'on') {
+            setBluetoothState(true)
+        } else {
+            setBluetoothState(false)
+        }
+    }
+
     const handleDiscoverPeripheral = (peripheral: Peripheral) => {
-        // Faça seu filtro por nome, MAC ou UUID do ESP32 aqui
+        
+        // Filtra por nome
         if (peripheral.name?.toLowerCase().includes('esp32')) {
             console.log('Encontrado:', peripheral.name);
             BleManager.stopScan();
@@ -48,7 +66,7 @@ const TemperatureSensor: React.FC = () => {
         }
 
         console.log(peripheral)
-        
+    
     };
 
     const handleDisconnectedPeripheral = (data: { peripheral: string }) => {
@@ -63,6 +81,7 @@ const TemperatureSensor: React.FC = () => {
         characteristic: string;
         service: string;
     }) => {
+
         const raw = Buffer.from(data.value);
         const tempString = raw.toString(); // ex: "23.5"
 
@@ -71,6 +90,7 @@ const TemperatureSensor: React.FC = () => {
     };
 
     const scanAndConnect = () => {
+       
         if (scanning) return;
 
         setScanning(true);
@@ -102,7 +122,13 @@ const TemperatureSensor: React.FC = () => {
 
     return (
         <View style={styles.container}>
-            <Button title={scanning ? 'Escaneando...' : 'Conectar ao sensor'} onPress={scanAndConnect} />
+            {bluetoothState ?
+                (
+                    <Button title={scanning ? 'Escaneando...' : 'Conectar ao sensor'} onPress={scanAndConnect} />
+                ) : (
+                    <Text>Turn on bluetooth</Text>
+                )
+            }
 
             {connectedPeripheral && (
                 <View style={styles.info}>
