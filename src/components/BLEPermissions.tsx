@@ -6,14 +6,14 @@ import {
   Text,
   View,
 } from 'react-native';
- 
+
 type Props = {
   onGranted?: () => void;
 };
- 
+
 const BLEPermissions: React.FC<Props> = ({ onGranted }) => {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean>(false);
- 
+
   const requestPermissions = async () => {
     if (Platform.OS === 'android') {
       try {
@@ -22,11 +22,11 @@ const BLEPermissions: React.FC<Props> = ({ onGranted }) => {
           PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
           PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
         ]);
- 
+
         const allGranted = Object.values(granted).every(
           value => value === PermissionsAndroid.RESULTS.GRANTED,
         );
- 
+
         if (allGranted) {
           setPermissionsGranted(true);
           onGranted?.();
@@ -44,20 +44,20 @@ const BLEPermissions: React.FC<Props> = ({ onGranted }) => {
       onGranted?.();
     }
   };
- 
+
   useEffect(() => {
     requestPermissions();
   }, []);
- 
+
   return (
-<View>
+    <View>
       {!permissionsGranted && (
-<Text style={{ textAlign: 'center', color: 'red' }}>
+        <Text style={{ textAlign: 'center', color: 'red' }}>
           Aguardando permissões Bluetooth...
-</Text>
+        </Text>
       )}
-</View>
+    </View>
   );
 };
- 
+
 export default BLEPermissions;

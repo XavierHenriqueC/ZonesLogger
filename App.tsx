@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { SafeAreaView, View, StyleSheet, Text } from 'react-native';
 import BLEPermissions from './src/components/BLEPermissions';
-import BLEScanner from './src/components/BLEScanner';
-import TemperatureSensor from './src/components/TemperatureSensor';
+import BeaconRead from './src/components/BeaconRead';
+
 
 const App: React.FC = () => {
   
@@ -16,7 +16,7 @@ const App: React.FC = () => {
       <BLEPermissions onGranted={() => setHasPermission(true)} />
       {hasPermission && (
         <View style={styles.body}>
-          <TemperatureSensor></TemperatureSensor>
+          <BeaconRead></BeaconRead>
         </View>
       )}
     </SafeAreaView>
@@ -37,10 +37,8 @@ const styles = StyleSheet.create({
     fontSize: 20
   },
   body: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
-    justifyContent: 'center'
+    flex: 1,
+    backgroundColor: "#fff"
   },
 })
 
