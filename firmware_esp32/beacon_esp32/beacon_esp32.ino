@@ -17,20 +17,21 @@ class ServerCallbacks : public NimBLEServerCallbacks {
     Serial.println(">> Dispositivo conectado!");
   }
 
-  void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo) {
-    Serial.println(">> Dispositivo desconectado!");
-
+  void onDisconnect(NimBLEServer* pServer, NimBLEConnInfo& connInfo, int reason) override {
+    Serial.printf("Client disconnected - start advertising\n");
     NimBLEDevice::startAdvertising();
-    Serial.println(">> Advertising reiniciado.");
   }
+
 };
 
 // ============================
 // Callback para Setpoint
 // ============================
 class SetpointCallbacks : public NimBLECharacteristicCallbacks {
-  void onWrite(NimBLECharacteristic* pCharacteristic) {
+
+  void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
     std::string value = pCharacteristic->getValue();
+
     if (value.length() > 0) {
       float newSetpoint = atof(value.c_str());
       setpointTemperature = newSetpoint;

@@ -1,57 +1,51 @@
 import React, { useEffect, useState } from 'react';
+import { useBle } from '../../context/BleContext';
 import {
     View,
     Text,
     Button,
-    NativeEventEmitter,
-    NativeModules,
     TextInput,
-    PermissionsAndroid,
-    Platform,
     StyleSheet,
 } from 'react-native';
 
 import { Buffer } from 'buffer';
-import BleManager from 'react-native-ble-manager';
 
-const BleManagerModule = NativeModules.BleManager;
-const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
+interface propsInterface {
+    deviceId: string;
+    connectedStatus: (state: boolean) => void;
+}
 
-const DEVICE_ID = '58:BF:25:92:D6:B2';
-const SERVICE_UUID = '00001809-0000-1000-8000-00805f9b34fb';
-const TEMPERATURE_UUID = '00002a1c-0000-1000-8000-00805f9b34fb';  // Temperatura (READ + NOTIFY)
-const SETPOINT_UUID = '00002a1e-0000-1000-8000-00805f9b34fb';     // Setpoint (READ + WRITE)
+const BeaconRead: React.FC<propsInterface> = ({ deviceId, connectedStatus }) => {
 
-// const SERVICE_UUID = '00001809-0000-1000-8000-00805f9b34fb';
-// const TEMP_CHAR_UUID = '00002a1c-0000-1000-8000-00805f9b34fb';
-// const SETPOINT_CHAR_UUID = '00002a1e-0000-1000-8000-00805f9b34fb';
+    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable } = useBle()
 
-export default function TemperatureBLE() {
     const [isConnected, setIsConnected] = useState(false);
     const [temperature, setTemperature] = useState('--');
     const [setpoint, setSetpoint] = useState('--');
     const [inputSetpoint, setInputSetpoint] = useState('');
 
+    const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb'; //1809
+    const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';  // Temperatura (READ + NOTIFY)
+    const setpointUIDD = '00002a1e-0000-1000-8000-00805f9b34fb';     // Setpoint (READ + WRITE)
+
     useEffect(() => {
-        BleManager.start({ showAlert: false });
 
         const handleUpdateValue = (data: any) => {
+
             const value = Buffer.from(data.value).toString();
-            console.log(`Notificação recebida de ${data.characteristic}:`, value);
 
-            console.log(data)
-
-            if (data.characteristic === TEMPERATURE_UUID) {
+            if (data.characteristic === temperatureUIDD) {
                 setTemperature(value);
-            } else if (data.characteristic === SETPOINT_UUID) {
+            } else if (data.characteristic === setpointUIDD) {
                 setSetpoint(value);
             }
         };
 
         const handleDisconnect = (peripheral: any) => {
             console.log('Dispositivo desconectado:', peripheral.peripheral);
-            if (peripheral.peripheral === DEVICE_ID) {
+            if (peripheral.peripheral === deviceId) {
                 setIsConnected(false);
+                connectedStatus(false)
                 setTemperature('--');
                 setSetpoint('--');
             }
@@ -74,35 +68,40 @@ export default function TemperatureBLE() {
     }, []);
 
     const connectDevice = async () => {
+
         try {
             console.log('Tentando conectar...');
 
             const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
+
             const isAlreadyConnected = connectedPeripherals.some(
-                (p) => p.id === DEVICE_ID
+                (p) => p.id === deviceId
             );
 
             if (isAlreadyConnected) {
                 console.log('Já conectado!');
                 setIsConnected(true);
+                connectedStatus(true)
                 await retrieveData();
                 return;
             }
 
-            await BleManager.connect(DEVICE_ID);
+            await BleManager.connect(deviceId);
             console.log('Conectado com sucesso');
 
-            await BleManager.retrieveServices(DEVICE_ID);
+            await BleManager.retrieveServices(deviceId);
             console.log('Serviços descobertos');
 
-            await BleManager.startNotification(DEVICE_ID, SERVICE_UUID, TEMPERATURE_UUID);
-            await BleManager.startNotification(DEVICE_ID, SERVICE_UUID, SETPOINT_UUID);
+            await BleManager.startNotification(deviceId, serviceUIDD, temperatureUIDD);
+            await BleManager.startNotification(deviceId, serviceUIDD, setpointUIDD);
 
             console.log('Notificações ativadas');
 
             setIsConnected(true);
+            connectedStatus(true)
 
             await retrieveData();
+
         } catch (error) {
             console.warn('Erro ao conectar:', error);
         }
@@ -110,11 +109,11 @@ export default function TemperatureBLE() {
 
     const retrieveData = async () => {
         try {
-            const tempData = await BleManager.read(DEVICE_ID, SERVICE_UUID, TEMPERATURE_UUID);
+            const tempData = await BleManager.read(deviceId, serviceUIDD, temperatureUIDD);
             const tempValue = Buffer.from(tempData).toString();
             setTemperature(tempValue);
 
-            const setpointData = await BleManager.read(DEVICE_ID, SERVICE_UUID, SETPOINT_UUID);
+            const setpointData = await BleManager.read(deviceId, serviceUIDD, setpointUIDD);
             const setpointValue = Buffer.from(setpointData).toString();
             setSetpoint(setpointValue);
 
@@ -127,9 +126,9 @@ export default function TemperatureBLE() {
     const disconnectDevice = async () => {
         try {
             console.log('Desconectando...');
-            await BleManager.stopNotification(DEVICE_ID, SERVICE_UUID, TEMPERATURE_UUID);
-            await BleManager.stopNotification(DEVICE_ID, SERVICE_UUID, SETPOINT_UUID);
-            await BleManager.disconnect(DEVICE_ID);
+            await BleManager.stopNotification(deviceId, serviceUIDD, temperatureUIDD);
+            await BleManager.stopNotification(deviceId, serviceUIDD, setpointUIDD);
+            await BleManager.disconnect(deviceId);
 
             setIsConnected(false);
             setTemperature('--');
@@ -146,14 +145,15 @@ export default function TemperatureBLE() {
 
         try {
             const valueBytes = Buffer.from(inputSetpoint);
-            await BleManager.write(
-                DEVICE_ID,
-                SERVICE_UUID,
-                SETPOINT_UUID,
+
+            const request = await BleManager.write(
+                deviceId,
+                serviceUIDD,
+                setpointUIDD,
                 Array.from(valueBytes)
             );
 
-            console.log('Setpoint enviado:', inputSetpoint);
+            console.log('Setpoint enviado:', inputSetpoint, request);
             setSetpoint(inputSetpoint);
             setInputSetpoint('');
         } catch (error) {
@@ -161,45 +161,54 @@ export default function TemperatureBLE() {
         }
     };
 
-    useEffect(() => {
-        console.log(`Temperatura: ${temperature}`)
-    },[temperature])
-
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>ESP32 BLE Temperatura</Text>
-
-            <Text style={styles.label}>
-                Temperatura: {isConnected ? `${temperature} °C` : '-- °C'}
-            </Text>
-
-            <Text style={styles.label}>
-                Setpoint: {isConnected ? `${setpoint} °C` : '-- °C'}
-            </Text>
-
-            {isConnected && (
-                <View style={styles.setpointContainer}>
-                    <TextInput
-                        style={styles.input}
-                        placeholder="Novo setpoint"
-                        keyboardType="numeric"
-                        value={inputSetpoint}
-                        onChangeText={setInputSetpoint}
-                    />
-                    <Button title="Enviar" onPress={writeSetpoint} />
+        radioState ? (
+            <View style={styles.container}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>Beacon</Text>
+                    <Text style={styles.id}>{deviceId}</Text>
                 </View>
-            )}
 
-            <View style={{ marginTop: 20 }}>
-                {isConnected ? (
-                    <Button title="Desconectar" onPress={disconnectDevice} />
-                ) : (
-                    <Button title="Conectar" onPress={connectDevice} />
+                <Text style={styles.label}>
+                    {isConnected && `${temperature} °C`}
+                </Text>
+
+                {isConnected && (
+                    <View style={styles.setpointContainer}>
+                        <Text>
+                            Setpoint: {isConnected ? `${setpoint} °C` : '-- °C'}
+                        </Text>
+                        <View style={styles.setpointWriteConteiner}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Novo setpoint"
+                                keyboardType="numeric"
+                                value={inputSetpoint}
+                                onChangeText={setInputSetpoint}
+                            />
+                            <Button title="Enviar" onPress={writeSetpoint} />
+                        </View>
+                    </View>
                 )}
+
+                <View style={{ marginTop: 20 }}>
+                    {isConnected ? (
+                        <Button title="Desconectar" onPress={disconnectDevice} />
+                    ) : (
+                        <Button title="Conectar" onPress={connectDevice} />
+                    )}
+                </View>
             </View>
-        </View>
+        ) : (
+            <View style={styles.container}>
+                <Text style={styles.text}>Bluetooth is off</Text>
+                <Button title='Enable Bluetooth' onPress={requestRadioEnable}></Button>
+            </View>
+        )
     );
 }
+
+export default BeaconRead;
 
 const styles = StyleSheet.create({
     container: {
@@ -208,28 +217,51 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 20,
     },
+    header: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderStyle: 'solid',
+        borderColor: '#222',
+        borderWidth: 1,
+        borderRadius: 10,
+        width: '100%'
+    },
+    id: {
+
+    },
     title: {
         fontSize: 22,
-        marginBottom: 20,
         fontWeight: 'bold',
     },
     label: {
-        fontSize: 24,
+        fontSize: 60,
         marginVertical: 5,
     },
     setpointContainer: {
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
         gap: 10,
-        marginTop: 15,
+        width: '100%',
+        borderStyle: 'solid',
+        borderColor: '#222',
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: 10
+    },
+    setpointWriteConteiner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
     },
     input: {
         borderWidth: 1,
         borderColor: '#ccc',
         borderRadius: 8,
-        padding: 8,
+        padding: 4,
         minWidth: 100,
-        marginRight: 10,
         fontSize: 18,
     },
+    text: {
+        color: '#222'
+    }
 });

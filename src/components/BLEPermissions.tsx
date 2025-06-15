@@ -5,6 +5,7 @@ import {
   Alert,
   Text,
   View,
+  Button
 } from 'react-native';
 
 type Props = {
@@ -50,13 +51,14 @@ const BLEPermissions: React.FC<Props> = ({ onGranted }) => {
   }, []);
 
   return (
-    <View>
-      {!permissionsGranted && (
-        <Text style={{ textAlign: 'center', color: 'red' }}>
+    !permissionsGranted && (
+      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+        <Text style={{ textAlign: 'center', color: '#222' }}>
           Aguardando permissões Bluetooth...
         </Text>
-      )}
-    </View>
+        <Button title='Verify Permissions' onPress={requestPermissions}></Button>
+      </View>
+    )
   );
 };
 
