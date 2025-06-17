@@ -5,28 +5,27 @@ import {
     Text,
     Button,
     StyleSheet,
-    Image
+    TextInput,
 } from 'react-native';
 
 import { Buffer } from 'buffer';
-import { Peripheral } from 'react-native-ble-manager';
 
 interface propsInterface {
-    device: Peripheral;
+    deviceId: string;
     connectedStatus: (state: boolean) => void;
     handleCancel: () => void;
 }
 
-const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancel }) => {
+const BeaconWrite: React.FC<propsInterface> = ({ deviceId, connectedStatus, handleCancel }) => {
 
     const { BleManager, bleManagerEmitter, radioState, requestRadioEnable } = useBle()
-
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
-    const [temperature, setTemperature] = useState('--');
+    const [setpoint, setSetpoint] = useState('--');
+    const [inputSetpoint, setInputSetpoint] = useState('');
 
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb'; //1809
-    const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';  // Temperatura (READ + NOTIFY)
+    const setpointUIDD = '00002a1e-0000-1000-8000-00805f9b34fb';     // Setpoint (READ + WRITE)
 
     useEffect(() => {
 
@@ -34,17 +33,17 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
             const value = Buffer.from(data.value).toString();
 
-            if (data.characteristic === temperatureUIDD) {
-                setTemperature(value);
+            if (data.characteristic === setpointUIDD) {
+                setSetpoint(value);
             }
         };
 
         const handleDisconnect = (peripheral: any) => {
             console.log('Dispositivo desconectado:', peripheral.peripheral);
-            if (peripheral.peripheral === device.id) {
+            if (peripheral.peripheral === deviceId) {
                 setIsConnected(false);
                 connectedStatus(false)
-                setTemperature('--');
+                setSetpoint('--');
             }
         };
 
@@ -70,11 +69,10 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         try {
             console.log('Tentando conectar...');
             setIsConnecting(true)
-
-            //Verifica se já esta conectado
             const connectedPeripherals = await BleManager.getConnectedPeripherals([]);
+
             const isAlreadyConnected = connectedPeripherals.some(
-                (p) => p.id === device.id
+                (p) => p.id === deviceId
             );
 
             if (isAlreadyConnected) {
@@ -85,20 +83,17 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                 return;
             }
 
-            //Conecta, requisita serviços e inicia notificações
-            await BleManager.connect(device.id);
+            await BleManager.connect(deviceId);
             console.log('Conectado com sucesso');
-
-            // await BleManager.retrieveServices(device.id).then((value) => console.log(value));
-            // console.log('Serviços descobertos');
-
-            await BleManager.startNotification(device.id, serviceUIDD, temperatureUIDD);
-            console.log('Notificações ativadas');
-            
             setIsConnected(true);
             connectedStatus(true)
 
-            //Recebe os dados
+            await BleManager.retrieveServices(deviceId);
+            console.log('Serviços descobertos');
+
+            await BleManager.startNotification(deviceId, serviceUIDD, setpointUIDD);
+
+            console.log('Notificações ativadas');
             await retrieveData();
 
         } catch (error) {
@@ -111,11 +106,11 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const retrieveData = async () => {
         try {
-            const data = await BleManager.read(device.id, serviceUIDD, temperatureUIDD);
-            const value = Buffer.from(data).toString();
-            setTemperature(value);
+            const setpointData = await BleManager.read(deviceId, serviceUIDD, setpointUIDD);
+            const setpointValue = Buffer.from(setpointData).toString();
+            setSetpoint(setpointValue);
 
-            console.log('Dados lidos:', { value });
+            console.log('Dados lidos:', { setpointValue });
         } catch (error) {
             console.warn('Erro ao ler dados:', error);
         }
@@ -123,27 +118,44 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const disconnectDevice = async () => {
         try {
-            console.log('Parando notificações...');
-            await BleManager.stopNotification(device.id, serviceUIDD, temperatureUIDD);
-            console.log('Notificações paradas');
-        } catch (error) {
-            console.warn('Erro ao parar as notificações:', error);
-        }
-
-        try {
             console.log('Desconectando...');
-            await BleManager.disconnect(device.id);
+            await BleManager.disconnect(deviceId);
+            await BleManager.stopNotification(deviceId, serviceUIDD, setpointUIDD);
+
             setIsConnected(false);
-            setTemperature('--');
+            setSetpoint('--');
+
             console.log('Dispositivo desconectado');
         } catch (error) {
             console.warn('Erro ao desconectar:', error);
         }
     };
 
+    const writeSetpoint = async () => {
+        if (!inputSetpoint) return;
+
+        try {
+            const valueBytes = Buffer.from(inputSetpoint);
+
+            const request = await BleManager.write(
+                deviceId,
+                serviceUIDD,
+                setpointUIDD,
+                Array.from(valueBytes)
+            );
+
+            console.log('Setpoint enviado:', inputSetpoint, request);
+            setSetpoint(inputSetpoint);
+            setInputSetpoint('');
+        } catch (error) {
+            console.warn('Erro ao enviar setpoint:', error);
+        }
+    };
+
     useEffect(() => {
         if (!radioState) {
-            disconnectDevice()
+            setIsConnected(false)
+            setIsConnecting(false)
         }
     }, [radioState])
 
@@ -161,48 +173,32 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                         )}
                     </View>
                     <View style={styles.titleContainer}>
-                        <Text style={styles.title}>{device.name || 'Beacon'}</Text>
-                        <Text style={styles.id}>{device.id}</Text>
+                        <Text style={styles.title}>Beacon</Text>
+                        <Text style={styles.id}>{deviceId}</Text>
                         <Text style={isConnected ? styles.stateOn : styles.stateOff}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
                     </View>
                 </View>
 
                 <View style={styles.body}>
-
-                    {isConnected &&
-                        <>
-                            <View style={styles.bodyValues}>
-
-
-                                <View style={styles.labelContainer}>
-                                    <Image
-                                        source={require('../../assets/temperature_icon.png')}
-                                        style={styles.icon}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.label}>
-                                        {`${temperature} °C`}
-                                    </Text>
-                                </View>
-                                <View style={styles.labelContainer}>
-                                    <Image
-                                        source={require('../../assets/humidity_icon.png')}
-                                        style={styles.icon}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.label}>
-                                        {`${temperature} %`}
-                                    </Text>
-                                </View>
-
-
+                    {isConnected && (
+                        <View style={styles.setpointContainer}>
+                            <Text>
+                                Setpoint: {isConnected ? `${setpoint} °C` : '-- °C'}
+                            </Text>
+                            <View style={styles.setpointWriteConteiner}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Novo setpoint"
+                                    keyboardType="numeric"
+                                    value={inputSetpoint}
+                                    onChangeText={setInputSetpoint}
+                                />
+                                <Button title="Enviar" onPress={writeSetpoint} />
                             </View>
-                            <View style={styles.bodyButtons}>
-                                <Button title='Download Data'></Button>
-                            </View>
-                        </>
-                    }
+                        </View>
+                    )}
                 </View>
+
             </View>
         ) : (
             <View style={styles.container}>
@@ -213,7 +209,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     );
 }
 
-export default BeaconRead;
+export default BeaconWrite;
 
 const styles = StyleSheet.create({
     container: {
@@ -265,37 +261,33 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
+        borderColor: '#fff',
     },
-    bodyValues: {
-        flex: 1,
+    setpointContainer: {
+        flexDirection: 'column',
+        alignItems: 'center',
         gap: 10,
-        alignItems: 'flex-start',
-        justifyContent: 'center',
+        width: '100%',
+        borderStyle: 'solid',
+        borderColor: '#222',
+        borderWidth: 1,
+        borderRadius: 10,
+        padding: 10
     },
-    bodyButtons: {
-        height: 'auto',
-        alignItems: 'center',
-        justifyContent: 'flex-end',
-    },
-    labelContainer: {
-        height: 'auto',
-        alignItems: 'center',
-        justifyContent: 'center',
+    setpointWriteConteiner: {
         flexDirection: 'row',
-        gap: 20,
+        alignItems: 'center',
+        gap: 5,
     },
-    icon: {
-        width: 50,
-        height: 50,
-    },
-    label: {
-        fontSize: 50,
-        fontWeight: 'bold',
-        color: '#fff',
-        textAlign: 'left'
+    input: {
+        borderWidth: 1,
+        borderColor: '#ccc',
+        borderRadius: 8,
+        padding: 4,
+        minWidth: 100,
+        fontSize: 18,
     },
     text: {
-        color: '#fff',
-        fontSize: 20
+        color: '#222'
     }
 });

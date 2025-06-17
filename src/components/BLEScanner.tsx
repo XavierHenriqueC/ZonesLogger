@@ -9,11 +9,12 @@ import {
     ListRenderItem,
     TouchableOpacity,
 } from 'react-native';
+import ScanAnimation from './ScanAnimation'
 
 import { Peripheral } from 'react-native-ble-manager';
 
 interface propsInterface {
-    handleSelectDevice: (id: string) => void;
+    handleSelectDevice: (item: Peripheral) => void;
 }
 
 const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
@@ -28,7 +29,7 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
 
         const handleDiscover = (peripheral: Peripheral) => {
 
-            if (peripheral.advertising.serviceUUIDs?.includes('1809')) {
+            if (true) { //peripheral.advertising.serviceUUIDs?.includes('1809')
                 setDevices(prev => {
                     const exists = prev.find(p => p.id === peripheral.id);
                     return exists ? prev : [...prev, peripheral];
@@ -48,6 +49,14 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
 
     }, []);
 
+    const handleSelect= (item: Peripheral) => {
+        handleSelectDevice(item)
+        BleManager.stopScan().then(() => {
+            setScanning(false);
+        })
+         
+    }
+
     const startScan = () => {
 
         if (!scanning) {
@@ -66,22 +75,29 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
     };
 
     const renderItem: ListRenderItem<Peripheral> = ({ item }) => (
-        <TouchableOpacity onPress={() => handleSelectDevice(item.id)} style={styles.device}>
+        <TouchableOpacity onPress={() => handleSelect(item)} style={styles.device}>
             <Text style={styles.name}>{item.name || 'Desconhecido'}</Text>
-            <Text>ID: {item.id}</Text>
-            <Text>RSSI: {item.rssi}</Text>
+            <Text style={styles.id}>ID: {item.id}</Text>
+            <Text style={styles.rssi}>RSSI: {item.rssi}</Text>
         </TouchableOpacity>
     );
 
     return (
-        <View style={{ flex: 1 }}>
-            <Button title={scanning ? 'Scanning...' : 'Refresh'} onPress={startScan} />
+        <View style={styles.container}>
+            <View style={styles.animation}>
+                <ScanAnimation enableAnimation={scanning}></ScanAnimation>
+            </View>
+            <View style={styles.footer}>
+                <Button title={scanning ? 'Scanning...' : 'Refresh'} onPress={startScan} />
+            </View>
             <FlatList
+                style={styles.list}
                 data={devices}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
                 contentContainerStyle={{ padding: 10 }}
             />
+            
         </View>
     );
 };
@@ -89,12 +105,41 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
 export default BLEScanner;
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        padding: 20,
+        minWidth: '100%'
+    },
+    animation: {
+        flex: 1,
+    },
+    list: {
+        flex: 1,
+        marginTop: 20,
+        marginBottom: 20,
+        padding: 10,
+        minWidth: '100%'
+    },
     device: {
+        width: '100%',
         padding: 12,
         borderBottomWidth: 1,
-        borderColor: '#ccc',
+        borderColor: '#00BFFF',
     },
     name: {
         fontWeight: 'bold',
+        color: '#fff'
     },
+    id: {
+        color: '#fff'
+    },
+    rssi: {
+        color: '#fff'
+    },
+    footer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: 'auto',
+    }
 });
