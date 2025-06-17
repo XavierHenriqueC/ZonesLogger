@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         borderBottomWidth: 1,
-        borderColor: '#fff',
+        borderColor: '#00BFFF',
         padding: 10
     },
     buttons: {

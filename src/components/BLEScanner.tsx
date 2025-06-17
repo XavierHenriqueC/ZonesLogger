@@ -29,7 +29,7 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
 
         const handleDiscover = (peripheral: Peripheral) => {
 
-            if (true) { //peripheral.advertising.serviceUUIDs?.includes('1809')
+            if (peripheral.advertising.serviceUUIDs?.includes('1809')) { //peripheral.advertising.serviceUUIDs?.includes('1809')
                 setDevices(prev => {
                     const exists = prev.find(p => p.id === peripheral.id);
                     return exists ? prev : [...prev, peripheral];
@@ -87,7 +87,8 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
             <View style={styles.animation}>
                 <ScanAnimation enableAnimation={scanning}></ScanAnimation>
             </View>
-            <View style={styles.footer}>
+            <View style={styles.middle}>
+                <Text style={styles.text}>Sensors found: {devices.length}</Text>
                 <Button title={scanning ? 'Scanning...' : 'Refresh'} onPress={startScan} />
             </View>
             <FlatList
@@ -136,10 +137,14 @@ const styles = StyleSheet.create({
     rssi: {
         color: '#fff'
     },
-    footer: {
+    middle: {
         alignItems: 'center',
         justifyContent: 'center',
         width: '100%',
         height: 'auto',
+        gap: 20
+    },
+    text: {
+        color: '#fff'
     }
 });
