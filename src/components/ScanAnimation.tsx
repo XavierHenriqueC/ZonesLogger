@@ -6,12 +6,14 @@ import {
     Animated,
     Easing,
 } from 'react-native';
+import { Peripheral } from 'react-native-ble-manager';
 
 interface propsComponent {
     enableAnimation: boolean
+    devices: Peripheral[]
 }
 
-const ScanAnimation : React.FC <propsComponent> = ({ enableAnimation }) => {
+const ScanAnimation: React.FC<propsComponent> = ({ enableAnimation, devices }) => {
 
     const [enable, setEnable] = useState(false);
 
@@ -20,12 +22,12 @@ const ScanAnimation : React.FC <propsComponent> = ({ enableAnimation }) => {
     const wave3 = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        if(enableAnimation) {
+        if (enableAnimation) {
             setEnable(true)
         } else {
             setEnable(false)
         }
-    },[enableAnimation])
+    }, [enableAnimation])
 
     const createWaveAnimation = (animatedValue: Animated.Value, delay: number) => {
         return Animated.loop(
@@ -91,6 +93,11 @@ const ScanAnimation : React.FC <propsComponent> = ({ enableAnimation }) => {
         );
     };
 
+    const random = (min:number, max:number) => {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+
     return (
         <View style={styles.container}>
             <View style={styles.centered}>
@@ -103,6 +110,13 @@ const ScanAnimation : React.FC <propsComponent> = ({ enableAnimation }) => {
                     resizeMode="contain"
                 />
             </View>
+            {devices.length > 0 && devices.map(() => (
+                <Image
+                source={require('../../assets/beacon.png')}
+                style={[styles.beacon, {top: random(20,200), left: random(30,250)}]}
+                resizeMode="contain"
+            />
+            ))}
         </View>
     );
 };
@@ -133,6 +147,13 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#00BFFF',
     },
+    beacon: {
+        width: 30,
+        height: 30,
+        position: 'absolute',
+        top: 150, // 20 a 200
+        left: 30 //30 a 250
+    }
 });
 
 export default ScanAnimation;
