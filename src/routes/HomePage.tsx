@@ -4,7 +4,8 @@ import {
     StyleSheet,
     Text,
     Button,
-    BackHandler
+    BackHandler,
+    Image
 } from 'react-native';
 import ScanPage from './ScanPage';
 import HistoryPage from './HistoryPage';
@@ -45,8 +46,13 @@ const HomePage: React.FC<propsInterface> = ({ }) => {
                 <>
                     <View style={styles.center}>
                         <View style={styles.logo}>
-                            <Text style={styles.textLogo}>ZONES</Text>
-                            <Text style={styles.textLogo}>LOGGER</Text>
+                            {/* <Text style={styles.textLogo}>ZONES</Text>
+                            <Text style={styles.textLogo}>LOGGER</Text> */}
+                            <Image
+                                source={require('../../assets/logo.png')}
+                                style={styles.icon}
+                                resizeMode="contain"
+                            />
                         </View>
                     </View>
 
@@ -56,7 +62,7 @@ const HomePage: React.FC<propsInterface> = ({ }) => {
                     </View>
                 </>
             }
-            
+
             {/* ScanPage */}
             {screen === 1 &&
                 <ScanPage></ScanPage>
@@ -98,6 +104,10 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: '#fff',
         borderRadius: 10
+    },
+    icon: {
+        width: 200,
+        height: 200,
     },
     textLogo: {
         color: "#fff",
