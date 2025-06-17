@@ -10,6 +10,7 @@ import {
 
 import { Buffer } from 'buffer';
 import { Peripheral } from 'react-native-ble-manager';
+import { usePopup } from '../../context/PopupContext';
 
 interface propsInterface {
     device: Peripheral;
@@ -24,9 +25,12 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
     const [temperature, setTemperature] = useState('--');
+    const [humidity, setHumidity] = useState('--');
 
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb'; //1809
     const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';  // Temperatura (READ + NOTIFY)
+
+    const { showMessage } = usePopup()
 
     useEffect(() => {
 
@@ -87,14 +91,14 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
             //Conecta, requisita serviços e inicia notificações
             await BleManager.connect(device.id);
-            console.log('Conectado com sucesso');
+            showMessage('Conectado com sucesso!', 'success')
 
-            // await BleManager.retrieveServices(device.id).then((value) => console.log(value));
-            // console.log('Serviços descobertos');
+            await BleManager.retrieveServices(device.id).then((value) => console.log(value));
+            console.log('Serviços descobertos');
 
             await BleManager.startNotification(device.id, serviceUIDD, temperatureUIDD);
             console.log('Notificações ativadas');
-            
+
             setIsConnected(true);
             connectedStatus(true)
 
@@ -103,6 +107,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
         } catch (error) {
             console.warn('Erro ao conectar:', error);
+            showMessage(`${error}`, 'error')
             disconnectDevice()
         } finally {
             setIsConnecting(false)
@@ -118,6 +123,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
             console.log('Dados lidos:', { value });
         } catch (error) {
             console.warn('Erro ao ler dados:', error);
+            showMessage(`${error}`, 'error')
         }
     };
 
@@ -138,6 +144,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
             console.log('Dispositivo desconectado');
         } catch (error) {
             console.warn('Erro ao desconectar:', error);
+            showMessage(`${error}`, 'error')
         }
     };
 
@@ -152,18 +159,18 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
             <View style={styles.container}>
 
                 <View style={styles.header}>
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.title}>{device.name || 'Beacon'}</Text>
+                        <Text style={styles.id}>{device.id}</Text>
+                        <Text style={isConnected ? styles.stateOn : styles.stateOff}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
+                    </View>
                     <View style={styles.buttons}>
-                        <Button disabled={isConnected || isConnecting} title='Return' onPress={handleCancel}></Button>
+                        <Button disabled={isConnected || isConnecting} title='Cancel' onPress={handleCancel}></Button>
                         {isConnected ? (
                             <Button title="Disconnect" onPress={disconnectDevice} />
                         ) : (
                             <Button title={isConnecting ? 'Connecting...' : 'Connect'} onPress={connectDevice} />
                         )}
-                    </View>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>{device.name || 'Beacon'}</Text>
-                        <Text style={styles.id}>{device.id}</Text>
-                        <Text style={isConnected ? styles.stateOn : styles.stateOff}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
                     </View>
                 </View>
 
@@ -191,7 +198,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                                         resizeMode="contain"
                                     />
                                     <Text style={styles.label}>
-                                        {`${temperature} %`}
+                                        {`${humidity} %`}
                                     </Text>
                                 </View>
 
@@ -234,9 +241,8 @@ const styles = StyleSheet.create({
         gap: 5,
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 1,
+        borderBottomWidth: 1,
         borderColor: '#fff',
-        borderRadius: 10,
         padding: 10
     },
     buttons: {
@@ -248,7 +254,8 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 22,
         fontWeight: 'bold',
-        color: '#fff'
+        color: '#fff',
+        textAlign: 'center'
     },
     id: {
         color: '#fff'
