@@ -109,7 +109,9 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         } catch (error) {
             console.warn('Erro ao conectar:', error);
             showMessage(`${error}`, 'error')
-            disconnectDevice()
+            if(isConnected) {
+                disconnectDevice()
+            }
         } finally {
             setIsConnecting(false)
         }

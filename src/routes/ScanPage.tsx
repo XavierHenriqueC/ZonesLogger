@@ -9,6 +9,7 @@ import BLEScanner from '../components/BLEScanner';
 import { useBle } from '../../context/BleContext';
 import BeaconRead from '../components/BeaconRead';
 import { Peripheral } from 'react-native-ble-manager';
+import { usePopup } from '../../context/PopupContext';
 
 interface propsInterface {
 
@@ -20,6 +21,7 @@ const ScanPage: React.FC<propsInterface> = ({ }) => {
     const [screen, setScreen] = useState<number>(0)
     const { radioState, requestRadioEnable } = useBle()
     const [deviceSelected, setDeviceSelected] = useState<Peripheral | null>(null)
+    const { hideMessage } = usePopup()
 
     const handleNav = (screen: number) => {
         setScreen(screen)
@@ -32,6 +34,11 @@ const ScanPage: React.FC<propsInterface> = ({ }) => {
 
     const checkConnectedStatus = (state: boolean) => {
         
+    }
+
+    const handleCancel = () => {
+        setScreen(0)
+        hideMessage()
     }
 
     useEffect(() => {
@@ -60,7 +67,7 @@ const ScanPage: React.FC<propsInterface> = ({ }) => {
 
             {/* DevicePage */}
             {screen === 1 && deviceSelected &&
-                <BeaconRead device={deviceSelected} connectedStatus={checkConnectedStatus} handleCancel={() => setScreen(0)}></BeaconRead>
+                <BeaconRead device={deviceSelected} connectedStatus={checkConnectedStatus} handleCancel={handleCancel}></BeaconRead>
             }
 
 

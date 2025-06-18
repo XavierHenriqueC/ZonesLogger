@@ -9,6 +9,7 @@ interface PopupMessage {
 
 interface PopupContextData {
   showMessage: (message: string, type?: PopupType) => void;
+  hideMessage: () => void
 }
 
 const PopupContext = createContext<PopupContextData | undefined>(undefined);
@@ -21,8 +22,12 @@ export const PopupProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setTimeout(() => setPopup(null), 3000);
   }, []);
 
+  const hideMessage = () => {
+    setPopup(null)
+  }
+
   return (
-    <PopupContext.Provider value={{ showMessage }}>
+    <PopupContext.Provider value={{ showMessage, hideMessage }}>
       {children}
       {popup && <Popup message={popup.message} type={popup.type} />}
     </PopupContext.Provider>
