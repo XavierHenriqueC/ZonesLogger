@@ -30,7 +30,7 @@ const BLEScanner: React.FC<propsInterface> = ({ handleSelectDevice }) => {
 
         const handleDiscover = (peripheral: Peripheral) => {
 
-            if (true) { //peripheral.advertising.serviceUUIDs?.includes('1809')
+            if (peripheral.advertising.serviceUUIDs?.includes('1809')) { //peripheral.advertising.serviceUUIDs?.includes('1809')
                 
                 setDevicesFound(prev => {
                     const exists = prev.find(p => p.id === peripheral.id);
