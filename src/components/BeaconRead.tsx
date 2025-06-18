@@ -49,6 +49,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                 setIsConnected(false);
                 connectedStatus(false)
                 setTemperature('--');
+                setHumidity('--');
             }
         };
 
@@ -134,6 +135,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
             console.log('Notificações paradas');
         } catch (error) {
             console.warn('Erro ao parar as notificações:', error);
+            showMessage(`${error}`, 'error')
         }
 
         try {
@@ -179,8 +181,6 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                     {isConnected &&
                         <>
                             <View style={styles.bodyValues}>
-
-
                                 <View style={styles.labelContainer}>
                                     <Image
                                         source={require('../../assets/temperature_icon.png')}
@@ -201,8 +201,6 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                                         {`${humidity} %`}
                                     </Text>
                                 </View>
-
-
                             </View>
                             <View style={styles.bodyButtons}>
                                 <Button title='Download Data'></Button>

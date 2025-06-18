@@ -12,16 +12,17 @@ import {
 import ScanAnimation from './ScanAnimation'
 
 import { Peripheral } from 'react-native-ble-manager';
+import { Position, generateBeaconAnimatedPositions } from '../helpers/helpers';
 
 interface propsInterface {
     handleSelectDevice: (item: Peripheral) => void;
 }
 
-const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
+const BLEScanner: React.FC<propsInterface> = ({ handleSelectDevice }) => {
 
     const [scanning, setScanning] = useState(false);
-    const [devices, setDevices] = useState<Peripheral[]>([]);
-    const { BleManager, bleManagerEmitter } = useBle()
+    const { BleManager, bleManagerEmitter, devicesFound, setDevicesFound } = useBle()
+    const [devicesPosition, setDevicesPosition] = useState<Position[]>([])
 
     useEffect(() => {
 
@@ -29,12 +30,26 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
 
         const handleDiscover = (peripheral: Peripheral) => {
 
-            if (true) { //peripheral.advertising.serviceUUIDs?.includes('1809')
-                setDevices(prev => {
+            if (peripheral.advertising.serviceUUIDs?.includes('1809')) { //peripheral.advertising.serviceUUIDs?.includes('1809')
+                
+                setDevicesFound(prev => {
                     const exists = prev.find(p => p.id === peripheral.id);
                     return exists ? prev : [...prev, peripheral];
                 });
-                console.log(peripheral)
+
+                setDevicesPosition(prev => {
+
+                    const exists = prev.find(p => p.id === peripheral.id);
+                    
+                    const obj: Position = {
+                        id: peripheral.id,
+                        x: generateBeaconAnimatedPositions().x,
+                        y: generateBeaconAnimatedPositions().y
+                    }
+
+                    return exists ? prev : [...prev, obj]
+                });
+                //console.log(peripheral)
             }
         };
 
@@ -49,18 +64,18 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
 
     }, []);
 
-    const handleSelect= (item: Peripheral) => {
+    const handleSelect = (item: Peripheral) => {
         handleSelectDevice(item)
         BleManager.stopScan().then(() => {
             setScanning(false);
         })
-         
+
     }
 
-    const startScan = () => {
-
+    const startScan = () => {  
         if (!scanning) {
-            setDevices([]);
+            setDevicesFound([]);
+            setDevicesPosition([])
             setScanning(true);
 
             BleManager.scan([], 5, true)
@@ -85,20 +100,20 @@ const BLEScanner: React.FC<propsInterface> = ({handleSelectDevice}) => {
     return (
         <View style={styles.container}>
             <View style={styles.animation}>
-                <ScanAnimation enableAnimation={scanning} devices={devices}></ScanAnimation>
+                <ScanAnimation enableAnimation={scanning} devicesPosition={devicesPosition}></ScanAnimation>
             </View>
             <View style={styles.middle}>
-                <Text style={styles.text}>Sensors found: {devices.length}</Text>
+                <Text style={styles.text}>Sensors found: {devicesFound.length}</Text>
                 <Button title={scanning ? 'Scanning...' : 'Refresh'} onPress={startScan} />
             </View>
             <FlatList
                 style={styles.list}
-                data={devices}
+                data={devicesFound}
                 keyExtractor={(item) => item.id}
                 renderItem={renderItem}
                 contentContainerStyle={{ padding: 10 }}
             />
-            
+
         </View>
     );
 };
@@ -113,6 +128,7 @@ const styles = StyleSheet.create({
     },
     animation: {
         flex: 1,
+        marginBottom: 50
     },
     list: {
         flex: 1,
@@ -142,9 +158,10 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         width: '100%',
         height: 'auto',
-        gap: 20
+        gap: 20,
     },
     text: {
+        marginTop: 5,
         color: '#fff'
     }
 });

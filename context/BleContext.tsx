@@ -1,15 +1,17 @@
 
 // BleContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import BleManager from 'react-native-ble-manager';
+import BleManager, {Peripheral} from 'react-native-ble-manager';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 
 
 interface BleContextType {
+    requestRadioEnable: () => void;
     bleManagerEmitter: NativeEventEmitter;
     BleManager: typeof BleManager;
     radioState: boolean;
-    requestRadioEnable: () => void;
+    devicesFound: Peripheral[]
+    setDevicesFound: React.Dispatch<React.SetStateAction<Peripheral[]>>;
 }
 
 const BleContext = createContext<BleContextType | undefined>(undefined);
@@ -17,6 +19,7 @@ const BleContext = createContext<BleContextType | undefined>(undefined);
 export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
     const [radioState, setRadioState] = useState<boolean>(false)
+    const [devicesFound, setDevicesFound] = useState<Peripheral[]>([])
 
     const BleManagerModule = NativeModules.BleManager;
     const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
@@ -59,13 +62,14 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     }
 
-
     return (
         <BleContext.Provider value={{
             //Insira as variveis disponiveis aqui
             BleManager,
             bleManagerEmitter,
             radioState,
+            devicesFound,
+            setDevicesFound,
             requestRadioEnable,
         }}>
             {children}

@@ -6,17 +6,16 @@ import {
     Animated,
     Easing,
 } from 'react-native';
-import { Peripheral } from 'react-native-ble-manager';
+import { Position } from '../helpers/helpers';
 
 interface propsComponent {
-    enableAnimation: boolean
-    devices: Peripheral[]
+    enableAnimation: boolean;
+    devicesPosition: Position[]
 }
 
-const ScanAnimation: React.FC<propsComponent> = ({ enableAnimation, devices }) => {
+const ScanAnimation: React.FC<propsComponent> = ({ enableAnimation, devicesPosition }) => {
 
     const [enable, setEnable] = useState(false);
-
     const wave1 = useRef(new Animated.Value(0)).current;
     const wave2 = useRef(new Animated.Value(0)).current;
     const wave3 = useRef(new Animated.Value(0)).current;
@@ -28,7 +27,7 @@ const ScanAnimation: React.FC<propsComponent> = ({ enableAnimation, devices }) =
             setEnable(false)
         }
     }, [enableAnimation])
-
+    
     const createWaveAnimation = (animatedValue: Animated.Value, delay: number) => {
         return Animated.loop(
             Animated.sequence([
@@ -93,11 +92,6 @@ const ScanAnimation: React.FC<propsComponent> = ({ enableAnimation, devices }) =
         );
     };
 
-    const random = (min:number, max:number) => {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-
     return (
         <View style={styles.container}>
             <View style={styles.centered}>
@@ -110,12 +104,13 @@ const ScanAnimation: React.FC<propsComponent> = ({ enableAnimation, devices }) =
                     resizeMode="contain"
                 />
             </View>
-            {devices.length > 0 && devices.map(() => (
+            {devicesPosition.length > 0 && devicesPosition.map((position, index) => (
                 <Image
-                source={require('../../assets/beacon.png')}
-                style={[styles.beacon, {top: random(20,200), left: random(30,250)}]}
-                resizeMode="contain"
-            />
+                    key={index}
+                    source={require('../../assets/beacon.png')}
+                    style={[styles.beacon, { top: position.y, left: position.x }]}
+                    resizeMode="contain"
+                />
             ))}
         </View>
     );
@@ -128,8 +123,8 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     centered: {
-        width: 200,
-        height: 200,
+        width: '100%',
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 20,
@@ -148,11 +143,9 @@ const styles = StyleSheet.create({
         borderColor: '#00BFFF',
     },
     beacon: {
-        width: 30,
-        height: 30,
+        width: 18,
+        height: 18,
         position: 'absolute',
-        top: 150, // 20 a 200
-        left: 30 //30 a 250
     }
 });
 
