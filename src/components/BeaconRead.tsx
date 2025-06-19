@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useBle } from '../../context/BleContext';
+import { BleData, decodeData, useBle } from '../../context/BleContext';
 import {
     View,
     Text,
@@ -13,6 +13,7 @@ import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 
 import { SensorData, SensorDataType } from '../proto/SensorData';
+import BeaconWrite from './BeaconWrite';
 
 interface propsInterface {
     device: Peripheral;
@@ -22,6 +23,7 @@ interface propsInterface {
 
 const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancel }) => {
 
+    const [screen, setScreen] = useState<number>(0)
     const { BleManager, bleManagerEmitter, radioState, requestRadioEnable } = useBle();
 
     const [isConnected, setIsConnected] = useState(false);
@@ -32,20 +34,15 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb';
     const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';
 
-    const { showMessage } = usePopup();
+    const { showMessage, hideMessage } = usePopup();
 
     useEffect(() => {
 
-        const handleUpdateValue = (data: any) => {
+        const handleUpdateValue = (data: BleData) => {
             try {
-                const buffer = Buffer.from(data.value);
-                const decoded = SensorData.decode(buffer);
-                const decodedObj = SensorData.toObject(decoded) as SensorDataType;
-
-                console.log('Notify:', decodedObj);
-
-                setTemperature(decodedObj.temperature.toFixed(1));
-                setHumidity(decodedObj.humidity.toFixed(1));
+                const values = decodeData(data.value)
+                setTemperature(values.temperature.toFixed(1));
+                setHumidity(values.humidity.toFixed(1));
 
             } catch (error) {
                 console.warn('Erro ao decodificar notify:', error);
@@ -59,6 +56,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                 connectedStatus(false);
                 setTemperature('--');
                 setHumidity('--');
+                setScreen(0)
             }
         };
 
@@ -123,17 +121,12 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     };
 
     const retrieveData = async () => {
-        
+
         try {
-
-            const data = await BleManager.read(device.id, serviceUIDD, temperatureUIDD);
-            const buffer = Buffer.from(data);
-            const decoded = SensorData.decode(buffer);
-            const decodedObj = SensorData.toObject(decoded) as SensorDataType;
-
-            console.log('Notify:', decodedObj);
-            setTemperature(decodedObj.temperature.toFixed(1));
-            setHumidity(decodedObj.humidity.toFixed(1));
+            const value = await BleManager.read(device.id, serviceUIDD, temperatureUIDD);
+            const values = decodeData(value)
+            setTemperature(values.temperature.toFixed(1));
+            setHumidity(values.humidity.toFixed(1));
 
         } catch (error) {
             console.warn('Erro ao ler dados:', error);
@@ -154,6 +147,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         try {
             console.log('Desconectando...');
             await BleManager.disconnect(device.id);
+            setScreen(0)
             setIsConnected(false);
             setTemperature('--');
             setHumidity('--');
@@ -164,13 +158,26 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         }
     };
 
+    const handleNav = (screen: number) => {
+        setScreen(screen)
+    }
+
+    const handleCancelConfig = () => {
+        setScreen(0)
+        hideMessage()
+    }
+
     useEffect(() => {
         if (!radioState) {
             disconnectDevice();
+            setScreen(0)
         }
     }, [radioState]);
 
+
+
     return (
+
         radioState ? (
             <View style={styles.container}>
 
@@ -190,40 +197,53 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                     </View>
                 </View>
 
-                <View style={styles.body}>
-                    {isConnected &&
-                        <>
-                            <View style={styles.bodyValues}>
-                                <View style={styles.labelContainer}>
-                                    <Image
-                                        source={require('../../assets/temperature_icon.png')}
-                                        style={styles.icon}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.label}>
-                                        {`${temperature} °C`}
-                                    </Text>
-                                </View>
-                                <View style={styles.labelContainer}>
-                                    <Image
-                                        source={require('../../assets/humidity_icon.png')}
-                                        style={styles.icon}
-                                        resizeMode="contain"
-                                    />
-                                    <Text style={styles.label}>
-                                        {`${humidity} %`}
-                                    </Text>
-                                </View>
-                            </View>
-                            <View style={styles.bodyButtons}>
-                                <Button title='Download Data' onPress={() => { }} />
-                            </View>
-                        </>
-                    }
-                </View>
+                {/* Read Page */}
+                {screen === 0 &&
+                    <>
+                        <View style={styles.body}>
+                            {isConnected &&
+                                <>
+                                    <View style={styles.bodyValues}>
+                                        <View style={styles.labelContainer}>
+                                            <Image
+                                                source={require('../../assets/temperature_icon.png')}
+                                                style={styles.icon}
+                                                resizeMode="contain"
+                                            />
+                                            <Text style={styles.label}>
+                                                {`${temperature} °C`}
+                                            </Text>
+                                        </View>
+                                        <View style={styles.labelContainer}>
+                                            <Image
+                                                source={require('../../assets/humidity_icon.png')}
+                                                style={styles.icon}
+                                                resizeMode="contain"
+                                            />
+                                            <Text style={styles.label}>
+                                                {`${humidity} %`}
+                                            </Text>
+                                        </View>
+                                    </View>
+                                    <View style={styles.bodyButtons}>
+                                        <Button title='Config. Sensor' onPress={() => handleNav(1)} />
+                                        <Button title='Download Data' onPress={() => { }} />
+                                    </View>
+                                </>
+                            }
+                        </View>
+
+                    </>
+                }
+
+                {/* Config Page */}
+                {screen === 1 && isConnected &&
+                    <BeaconWrite device={device} cancelConfig={handleCancelConfig}></BeaconWrite>
+                }
+
             </View>
         ) : (
-            <View style={styles.container}>
+            <View style={styles.radioDisabledContainer}>
                 <Text style={styles.text}>BLUETOOTH IS OFF!</Text>
                 <Button title='Enable Bluetooth' onPress={requestRadioEnable} />
             </View>
@@ -238,7 +258,12 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 20,
         minWidth: '100%',
-        gap: 20
+        gap: 20,
+    },
+    radioDisabledContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center'
     },
     header: {
         gap: 20,
@@ -292,7 +317,9 @@ const styles = StyleSheet.create({
     bodyButtons: {
         height: 'auto',
         alignItems: 'center',
-        justifyContent: 'flex-end',
+        justifyContent: 'space-between',
+        flexDirection: 'row',
+        minWidth: '100%',
     },
     labelContainer: {
         height: 'auto',

@@ -1,9 +1,11 @@
 
 // BleContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import BleManager, {Peripheral} from 'react-native-ble-manager';
+import BleManager, { Peripheral } from 'react-native-ble-manager';
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native';
 
+import { Buffer } from 'buffer';
+import { SensorData, SensorDataType } from '../src/proto/SensorData';
 
 interface BleContextType {
     requestRadioEnable: () => void;
@@ -13,6 +15,14 @@ interface BleContextType {
     devicesFound: Peripheral[]
     setDevicesFound: React.Dispatch<React.SetStateAction<Peripheral[]>>;
 }
+
+export type BleData = {
+    value: number[];         
+    peripheral: string;
+    characteristic: string;
+    service: string;
+};
+
 
 const BleContext = createContext<BleContextType | undefined>(undefined);
 
@@ -54,10 +64,10 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     useEffect(() => {
         requestRadioEnable()
-    },[radioState])
+    }, [radioState])
 
     const requestRadioEnable = () => {
-        if(!radioState){
+        if (!radioState) {
             BleManager.enableBluetooth()
         }
     }
@@ -82,3 +92,11 @@ export const useBle = () => {
     if (!context) throw new Error('useBle must be used within a BleProvider');
     return context;
 };
+
+export const decodeData = (value: number[]) => {
+    const buffer = Buffer.from(value);
+    const decoded = SensorData.decode(buffer);
+    const decodedObj = SensorData.toObject(decoded) as SensorDataType;
+
+    return decodedObj
+}

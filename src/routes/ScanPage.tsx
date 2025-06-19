@@ -15,7 +15,6 @@ interface propsInterface {
 
 }
 
-
 const ScanPage: React.FC<propsInterface> = ({ }) => {
 
     const [screen, setScreen] = useState<number>(0)
