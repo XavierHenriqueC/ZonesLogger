@@ -1,8 +1,0 @@
-Instalar:
-winget install protobuf
-winget install Python.Python.3
-
-Copiar pasta nanopb para C:Documents/arduino/libraries e C:
-
-Rodar na pasta onde esta o arquivo .proto:
-python C:\nanopb\generator\nanopb_generator.py sensor.proto

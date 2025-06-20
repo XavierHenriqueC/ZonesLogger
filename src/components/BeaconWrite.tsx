@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useBle } from '../../context/BleContext';
+import { useBle, BleData } from '../../context/BleContext';
 import {
     View,
     Text,
@@ -23,7 +23,7 @@ interface propsInterface {
 
 const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
 
-    const { BleManager, bleManagerEmitter } = useBle();
+    const { BleManager, bleManagerEmitter, decodeData } = useBle();
     const [interval, setInterval] = useState<number>();
     const [inputInterval, setInputInterval] = useState<number>();
 
@@ -34,16 +34,15 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
 
     useEffect(() => {
 
-        const handleUpdateValue = (data: any) => {
+        const handleUpdateValue = (data: BleData) => {
             try {
-                const buffer = Buffer.from(data.value);
-                const decoded = SensorData.decode(buffer);
-                const decodedObj = SensorData.toObject(decoded) as SensorDataType;
+                if (data.characteristic === intervalUIDD) {
+                    const values = decodeData(data.value)
 
-                console.log('Notify:', decodedObj);
-
-                if (decodedObj.interval) {
-                    setInterval(decodedObj.interval);
+                    if (values.interval) {
+                        setInterval(values.interval);
+                        setInputInterval(values.interval)
+                    }
                 }
 
             } catch (error) {
@@ -62,17 +61,14 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
     }, []);
 
     const retrieveData = async () => {
+
         try {
-            const data = await BleManager.read(device.id, serviceUIDD, intervalUIDD);
-            const buffer = Buffer.from(data);
-            const decoded = SensorData.decode(buffer);
-            const decodedObj = SensorData.toObject(decoded) as SensorDataType;
+            const value = await BleManager.read(device.id, serviceUIDD, intervalUIDD);
+            const values = decodeData(value)
 
-            console.log('Dados lidos:', decodedObj);
-
-            if (decodedObj.interval) {
-                setInterval(decodedObj.interval);
-                setInputInterval(decodedObj.interval)
+            if (values.interval) {
+                setInterval(values.interval);
+                setInputInterval(values.interval)
             }
 
         } catch (error) {
@@ -82,7 +78,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
     };
 
     const writeData = async () => {
-        
+
         try {
 
             // Cria mensagem com o campo interval preenchido
@@ -99,7 +95,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
                 intervalUIDD,
                 Array.from(buffer)
             );
-            
+
             setInterval(inputInterval);
             setInputInterval(inputInterval);
             showMessage('Salvo com sucesso!', 'success');
@@ -126,7 +122,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
                     </Text>
                     <View style={styles.sliderContainer}>
                         <Slider
-                            style={{ width: '85%', height: 40}}
+                            style={{ width: '85%', height: 40 }}
                             minimumValue={60}
                             maximumValue={3600}
                             step={10}

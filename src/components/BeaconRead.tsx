@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { BleData, decodeData, useBle } from '../../context/BleContext';
+import { BleData, useBle } from '../../context/BleContext';
 import {
     View,
     Text,
@@ -8,11 +8,8 @@ import {
     Image
 } from 'react-native';
 
-import { Buffer } from 'buffer';
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
-
-import { SensorData, SensorDataType } from '../proto/SensorData';
 import BeaconWrite from './BeaconWrite';
 
 interface propsInterface {
@@ -24,7 +21,7 @@ interface propsInterface {
 const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancel }) => {
 
     const [screen, setScreen] = useState<number>(0)
-    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable } = useBle();
+    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData, downloadLogData } = useBle();
 
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -33,6 +30,8 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb';
     const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';
+    const logDataUIDD = '2aff';
+    const controlUUID = '2afe';
 
     const { showMessage, hideMessage } = usePopup();
 
@@ -40,16 +39,17 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
         const handleUpdateValue = (data: BleData) => {
             try {
-                const values = decodeData(data.value)
-                setTemperature(values.temperature.toFixed(1));
-                setHumidity(values.humidity.toFixed(1));
-
+                if (data.characteristic === temperatureUIDD) {
+                    const values = decodeData(data.value)
+                    setTemperature(values.temperature.toFixed(1));
+                    setHumidity(values.humidity.toFixed(1));
+                }
             } catch (error) {
                 console.warn('Erro ao decodificar notify:', error);
             }
         };
 
-        const handleDisconnect = (peripheral: any) => {
+        const handleDisconnect = (peripheral: { peripheral: string, status: number }) => {
             console.log('Dispositivo desconectado:', peripheral.peripheral);
             if (peripheral.peripheral === device.id) {
                 setIsConnected(false);
@@ -106,6 +106,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
             setIsConnected(true);
             connectedStatus(true);
+            setIsConnecting(false);
 
             await retrieveData();
 
@@ -114,9 +115,8 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
             showMessage(`${error}`, 'error');
             if (isConnected) {
                 disconnectDevice();
+                setIsConnecting(false);
             }
-        } finally {
-            setIsConnecting(false);
         }
     };
 
@@ -125,6 +125,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         try {
             const value = await BleManager.read(device.id, serviceUIDD, temperatureUIDD);
             const values = decodeData(value)
+            console.log(values)
             setTemperature(values.temperature.toFixed(1));
             setHumidity(values.humidity.toFixed(1));
 
@@ -135,23 +136,19 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     };
 
     const disconnectDevice = async () => {
-        try {
-            console.log('Parando notificações...');
-            await BleManager.stopNotification(device.id, serviceUIDD, temperatureUIDD);
-            console.log('Notificações paradas');
-        } catch (error) {
-            console.warn('Erro ao parar notificações:', error);
-            showMessage(`${error}`, 'error');
-        }
 
         try {
+
             console.log('Desconectando...');
             await BleManager.disconnect(device.id);
+
             setScreen(0)
             setIsConnected(false);
+            setIsConnecting(false)
             setTemperature('--');
             setHumidity('--');
             console.log('Dispositivo desconectado');
+
         } catch (error) {
             console.warn('Erro ao desconectar:', error);
             showMessage(`${error}`, 'error');
@@ -167,14 +164,20 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         hideMessage()
     }
 
+    const handleDownload = async ()  => {
+        try {
+            await downloadLogData(device, serviceUIDD, logDataUIDD, controlUUID)
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
     useEffect(() => {
         if (!radioState) {
             disconnectDevice();
             setScreen(0)
         }
     }, [radioState]);
-
-
 
     return (
 
@@ -227,7 +230,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                                     </View>
                                     <View style={styles.bodyButtons}>
                                         <Button title='Config. Sensor' onPress={() => handleNav(1)} />
-                                        <Button title='Download Data' onPress={() => { }} />
+                                        <Button title='Download Data' onPress={() => handleDownload()} />
                                     </View>
                                 </>
                             }
