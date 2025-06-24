@@ -123,7 +123,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
                     <View style={styles.sliderContainer}>
                         <Slider
                             style={{ width: '85%', height: 40 }}
-                            minimumValue={60}
+                            minimumValue={10}
                             maximumValue={3600}
                             step={10}
                             minimumTrackTintColor="#1fb28a"

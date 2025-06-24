@@ -21,7 +21,7 @@ interface propsInterface {
 const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancel }) => {
 
     const [screen, setScreen] = useState<number>(0)
-    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData, downloadLogData } = useBle();
+    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData, downloadLog } = useBle();
 
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -30,8 +30,6 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb';
     const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';
-    const logDataUIDD = '2aff';
-    const controlUUID = '2afe';
 
     const { showMessage, hideMessage } = usePopup();
 
@@ -166,7 +164,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const handleDownload = async ()  => {
         try {
-            await downloadLogData(device, serviceUIDD, logDataUIDD, controlUUID)
+            await downloadLog(device)
         } catch (e) {
             console.log(e)
         }

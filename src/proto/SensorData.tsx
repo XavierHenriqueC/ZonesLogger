@@ -10,15 +10,20 @@ message SensorData {
   uint64 interval = 4;
 }
 
-message SensorDataLog {
-  repeated SensorData logs = 1;
+message LogControl {
+  enum Command {
+    START = 0;
+    STOP = 1;
+    CLEAR = 2;
+  }
+  Command command = 1;
 }
 `;
 
 const root = protobuf.parse(proto).root;
 
 export const SensorData = root.lookupType('SensorData');
-export const SensorDataLog = root.lookupType('SensorDataLog');
+export const LogControl = root.lookupType('LogControl');
 
 export type SensorDataType = {
   temperature: number;
@@ -27,6 +32,8 @@ export type SensorDataType = {
   interval: number;
 };
 
-export type SensorDataLogType = {
-  logs: SensorDataType[];
-};
+export function buildCommand(command: number) {
+    const message = LogControl.create({ command });
+    const buffer = LogControl.encode(message).finish();
+    return buffer;
+}

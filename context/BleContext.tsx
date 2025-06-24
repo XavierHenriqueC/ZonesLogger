@@ -3,8 +3,10 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import BleManager, { Peripheral } from 'react-native-ble-manager';
 import { NativeEventEmitter, NativeModules } from 'react-native';
 import { Buffer } from 'buffer';
-import { SensorData, SensorDataType, SensorDataLog } from '../src/proto/SensorData';
+import { SensorData, SensorDataType, buildCommand } from '../src/proto/SensorData';
 import { usePopup } from './PopupContext';
+import protobuf from 'protobufjs';
+
 
 interface BleContextType {
     requestRadioEnable: () => void;
@@ -14,7 +16,7 @@ interface BleContextType {
     devicesFound: Peripheral[];
     setDevicesFound: React.Dispatch<React.SetStateAction<Peripheral[]>>;
     decodeData: (value: number[]) => SensorDataType;
-    downloadLogData: (device: Peripheral, serviceUIDD: string, logUUID: string, controlUUID: string) => Promise<void>;
+    downloadLog: (device: Peripheral) => Promise<void>;
 }
 
 export type BleData = {
@@ -34,6 +36,10 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const BleManagerModule = NativeModules.BleManager;
     const bleManagerEmitter = new NativeEventEmitter(BleManagerModule);
 
+    const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb';
+    const logCharUIDD = '00002a1d-0000-1000-8000-00805f9b34fb'; //efcdab90-7856-3412-efcd-ab9078563412
+    const logControlCharUUID = '00002a1f-0000-1000-8000-00805f9b34fb';
+
     useEffect(() => {
         BleManager.checkState();
         BleManager.start({ showAlert: false });
@@ -47,9 +53,42 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             handleRadioStateChange
         );
 
+        const logs: SensorDataType[] = [];
+
+        const updateLog = bleManagerEmitter.addListener(
+            'BleManagerDidUpdateValueForCharacteristic',
+            ({ value, characteristic }) => {
+                if (characteristic.toLowerCase() === logCharUIDD.toLowerCase()) {
+                    const buffer = Buffer.from(value);
+                    console.log('📦 Pacote recebido:', buffer.toString('hex'));
+
+                    const reader = protobuf.Reader.create(buffer);
+                    //console.log('📖 Reader inicial:', reader);
+
+                    function isTimestampUnique(array: SensorDataType[], objeto: SensorDataType) {
+                        return !array.some(item => item.timestamp === objeto.timestamp);
+                    }
+
+                    try {
+                        const msg = SensorData.decodeDelimited(reader) as unknown as SensorDataType;
+                        if(isTimestampUnique(logs, msg)){
+                            logs.push(msg);
+                        }
+                        console.log('📄 Log recebido:', logs);
+                    } catch (err) {
+                        console.warn('⚠️ Erro no decode:', err);
+                    }
+
+                }
+            }
+        );
+
         return () => {
             updateState.remove();
+            updateLog.remove()
         };
+
+
     }, []);
 
     useEffect(() => {
@@ -70,100 +109,45 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
 
-
-    const downloadLogData = async (
-        device: Peripheral,
-        serviceUUID: string,
-        logUUID: string,
-        controlUUID: string
-    ) => {
-        const chunks: Buffer[] = [];
-        let lastChunkTime = Date.now();
-
-        console.log('Iniciado download dos logs');
-        showMessage('Download Started...', 'info');
-
-        // Inicia notificação para receber dados
-        await BleManager.startNotification(device.id, serviceUUID, logUUID)
-        .then(() => console.log('Notificações iniciadas no download'))
-        .catch((e) => console.log('Erro nas Notificações do download',e))
-
-        const subscription = bleManagerEmitter.addListener(
-            'BleManagerDidUpdateValueForCharacteristic',
-            ({ value, characteristic, peripheral }) => {
-                if (characteristic.toLowerCase() === logUUID.toLowerCase() && peripheral === device.id) {
-                    const chunk = Buffer.from(value);
-                    chunks.push(chunk);
-                    lastChunkTime = Date.now();
-
-                    console.log(`Chunk recebido: ${chunk.length} bytes`);
-                }
-            }
-        );
-
-        // Envia o comando 'start' para iniciar a transmissão dos logs
-        await BleManager.write(
-            device.id,
-            serviceUUID,
-            controlUUID,
-            Buffer.from('start').toJSON().data
-        );
-
-        console.log('Comando start enviado');
-
-        // Aguarda os dados chegando até um timeout sem receber chunks (ex.: 1500 ms sem receber)
-        await new Promise<void>((resolve) => {
-            const checkInterval = setInterval(() => {
-                const now = Date.now();
-                const timeSinceLastChunk = now - lastChunkTime;
-
-                if (timeSinceLastChunk > 1500) {
-                    console.log('Timeout sem novos dados. Encerrando...');
-                    clearInterval(checkInterval);
-                    resolve();
-                }
-            }, 500);
-        });
-
-        // Para de escutar notificações
-        subscription.remove();
-        await BleManager.stopNotification(device.id, serviceUUID, logUUID);
-
-        const fullBuffer = Buffer.concat(chunks);
-        console.log('Total de dados recebidos:', fullBuffer.length);
-
-        if (fullBuffer.length === 0) {
-            showMessage('Nenhum dado recebido!', 'error');
-            return;
-        }
+    /// 🚀 Função principal para download do log
+    async function downloadLog(
+        device: { id: string },
+    ) {
 
         try {
-            const decodedMessage = SensorDataLog.decode(fullBuffer);
-            const decodedLog = SensorDataLog.toObject(decodedMessage, {
-                longs: Number,
-                defaults: true,
-                arrays: true,
-                objects: true,
-            }) as { logs: SensorDataType[] };
+            await BleManager.retrieveServices(device.id).then((item) => console.log(item))
 
-            const logs = decodedLog.logs || [];
+            console.log('🚀 Iniciando download de log...');
+            await BleManager.startNotification(device.id, serviceUIDD, logCharUIDD);
 
-            console.log(`Logs recebidos: ${logs.length} registros`);
-            showMessage(`Logs recebidos: ${logs.length} registros`, 'success');
+            //START
+            const startBuffer = buildCommand(0);
 
-            logs.forEach((log) => {
-                console.log(
-                    `T=${log.temperature}°C | H=${log.humidity}% | Timestamp=${log.timestamp}`
-                );
-            });
+            await BleManager.write(
+                device.id,
+                serviceUIDD,
+                logControlCharUUID,
+                Array.from(startBuffer) // BleManager espera array de int, não Buffer direto
+            );
 
-            // 🔥 Aqui você pode salvar os logs em CSV, JSON ou exibir na UI.
+            // 🔥 Aguarda 5 segundos para o ESP32 enviar os pacotes
+            await new Promise(resolve => setTimeout(resolve, 30000));
+
+            //STOP
+            // const stopCommand = buildCommand(1);
+
+            // await BleManager.write(
+            //     device.id,
+            //     serviceUIDD,
+            //     logControlCharUUID,
+            //     Array.from(stopCommand) // BleManager espera array de int, não Buffer direto
+            // );
 
         } catch (error) {
-            console.error('Erro na decodificação dos logs:', error);
-            showMessage('Erro na decodificação dos logs', 'error');
+            console.error('❌ Erro no download de log:', error);
+            throw error;
         }
-    };
+    }
 
 
     return (
@@ -175,7 +159,7 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             setDevicesFound,
             requestRadioEnable,
             decodeData,
-            downloadLogData,
+            downloadLog,
         }}>
             {children}
         </BleContext.Provider>
