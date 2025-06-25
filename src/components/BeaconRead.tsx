@@ -11,6 +11,7 @@ import {
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 import BeaconWrite from './BeaconWrite';
+import { useBleLog } from '../hooks/useBleLog';
 
 interface propsInterface {
     device: Peripheral;
@@ -21,7 +22,8 @@ interface propsInterface {
 const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancel }) => {
 
     const [screen, setScreen] = useState<number>(0)
-    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData, downloadLog } = useBle();
+    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData } = useBle();
+    const { downloadLog, logs, clearLogs } = useBleLog()
 
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -32,6 +34,10 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';
 
     const { showMessage, hideMessage } = usePopup();
+
+    useEffect(() => {
+        console.log(logs)
+    },[logs])
 
     useEffect(() => {
 

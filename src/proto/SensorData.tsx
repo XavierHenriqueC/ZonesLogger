@@ -17,6 +17,7 @@ message LogControl {
     CLEAR = 2;
   }
   Command command = 1;
+  uint32 total_entries = 2; // <-- Novo campo
 }
 `;
 
@@ -32,8 +33,13 @@ export type SensorDataType = {
   interval: number;
 };
 
+export type LogControlType = {
+  command: number;
+  totalEntries: number;
+};
+
 export function buildCommand(command: number) {
-    const message = LogControl.create({ command });
-    const buffer = LogControl.encode(message).finish();
-    return buffer;
+  const message = LogControl.create({ command });
+  const buffer = LogControl.encode(message).finish();
+  return buffer;
 }
