@@ -22,22 +22,6 @@ const HomePage: React.FC<propsInterface> = ({ }) => {
         setScreen(screen)
     }
 
-    useEffect(() => {
-        setScreen(0)
-
-        const backAction = () => {
-            setScreen(0)
-            return true
-        }
-
-        const backHandler = BackHandler.addEventListener(
-            "hardwareBackPress",
-            backAction
-        );
-
-        return () => backHandler.remove(); // limpa o listener ao desmontar
-    }, [])
-
     return (
         <View style={styles.container}>
 
@@ -65,7 +49,7 @@ const HomePage: React.FC<propsInterface> = ({ }) => {
 
             {/* ScanPage */}
             {screen === 1 &&
-                <ScanPage></ScanPage>
+                <ScanPage cancel={() => setScreen(0)}></ScanPage>
             }
 
             {/* HistoryPage */}
@@ -120,9 +104,12 @@ const styles = StyleSheet.create({
         color: '#fff'
     },
     footer: {
-        height: 'auto',
-        gap: 10,
         marginTop: 10,
         marginBottom: 20,
+        minWidth: '90%',
+        justifyContent: 'space-between',
+        height: 'auto',
+        flexDirection: 'column',
+        gap: 10
     }
 })

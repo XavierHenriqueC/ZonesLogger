@@ -14,18 +14,17 @@ import { Buffer } from 'buffer';
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 
-import { SensorData, SensorDataType } from '../proto/SensorData';
+import { SensorData } from '../proto/SensorData';
 
 interface propsInterface {
     device: Peripheral;
-    cancelConfig: () => void
+    cancel: () => void
 }
 
-const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
+const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
 
     const { BleManager, bleManagerEmitter, decodeData } = useBle();
     const [interval, setInterval] = useState<number>();
-    const [inputInterval, setInputInterval] = useState<number>();
 
     const { showMessage } = usePopup();
 
@@ -35,13 +34,17 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
     useEffect(() => {
 
         const handleUpdateValue = (data: BleData) => {
+
+            if (device.name === 'DEMO') {
+                return
+            }
+
             try {
                 if (data.characteristic === intervalUIDD) {
                     const values = decodeData(data.value)
 
                     if (values.interval) {
-                        setInterval(values.interval);
-                        setInputInterval(values.interval)
+                        setInterval(values.interval)
                     }
                 }
 
@@ -62,13 +65,17 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
 
     const retrieveData = async () => {
 
+        if (device.name === 'DEMO') {
+            setInterval(60)
+            return
+        }
+
         try {
             const value = await BleManager.read(device.id, serviceUIDD, intervalUIDD);
             const values = decodeData(value)
 
             if (values.interval) {
-                setInterval(values.interval);
-                setInputInterval(values.interval)
+                setInterval(values.interval)
             }
 
         } catch (error) {
@@ -81,9 +88,16 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
 
         try {
 
+            if (device.name === 'DEMO') {
+                setInterval(interval);
+                showMessage('Salvo com sucesso!', 'success');
+                return
+            }
+
+
             // Cria mensagem com o campo interval preenchido
             const message = SensorData.create({
-                interval: inputInterval,
+                interval: interval,
             });
 
             // Serializa com protobuf
@@ -96,15 +110,16 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
                 Array.from(buffer)
             );
 
-            setInterval(inputInterval);
-            setInputInterval(inputInterval);
+            setInterval(interval);
             showMessage('Salvo com sucesso!', 'success');
 
         } catch (error) {
             console.warn('Erro ao enviar interval:', error);
             showMessage(`${error}`, 'error');
         } finally {
-            retrieveData()
+            if(device.name !== "DEMO") {
+                retrieveData()
+            }
         }
     };
 
@@ -114,7 +129,6 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
 
     return (
         <>
-
             <View style={styles.body}>
                 <View style={styles.bodyValues}>
                     <Text style={styles.text}>
@@ -129,16 +143,16 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancelConfig }) => {
                             minimumTrackTintColor="#1fb28a"
                             maximumTrackTintColor="#d3d3d3"
                             thumbTintColor="#1fb28a"
-                            value={inputInterval}
-                            onValueChange={setInputInterval}
+                            value={interval}
+                            onValueChange={setInterval}
                         />
-                        <Text style={styles.text}>{inputInterval}</Text>
+                        <Text style={styles.text}>{interval}</Text>
                     </View>
                 </View>
             </View>
-            <View style={styles.bodyButtons}>
-                <Button title="Read Sensor" onPress={cancelConfig} />
-                <Button title="Save Changes" onPress={writeData} />
+            <View style={styles.buttons}>
+                <Button title="Cancel" onPress={cancel} />
+                <Button title="Save" onPress={writeData} />
             </View>
 
         </>
@@ -172,12 +186,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 2,
     },
-    bodyButtons: {
-        height: 'auto',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexDirection: 'row',
+    buttons: {
         minWidth: '100%',
+        justifyContent: 'space-between',
+        height: 'auto',
+        flexDirection: 'column',
+        gap: 10
     },
     input: {
         width: 50,

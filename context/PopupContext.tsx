@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     width: 300,
     padding: 12,
     borderRadius: 8,
-    zIndex: 1000,
+    zIndex: 100,
     alignItems: 'center',
     height: 'auto'
   },

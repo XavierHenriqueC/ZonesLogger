@@ -1,3 +1,5 @@
+import { XYValue } from "react-native-responsive-linechart";
+
 export interface Position {
     id: string;
     x: number;
@@ -35,4 +37,34 @@ export const generateBeaconAnimatedPositions = (): Position => {
     const maxY2 = 200
     const position = { x: random(minX1, maxX1, minX2, maxX2), y: random(minY1, maxY1, minY2, maxY2), id: '' }
     return position
+}
+
+export const getMinMaxAvg = (points: XYValue[]) => {
+    if (points.length === 0) {
+        throw new Error("O array de pontos está vazio.");
+    }
+
+    let maxX = points[0].x;
+    let minX = points[0].x;
+    let maxY = points[0].y;
+    let minY = points[0].y;
+
+    let sumX = 0;
+    let sumY = 0;
+
+    for (const point of points) {
+        if (point.x > maxX) maxX = point.x;
+        if (point.x < minX) minX = point.x;
+        if (point.y > maxY) maxY = point.y;
+        if (point.y < minY) minY = point.y;
+
+        sumX += point.x;
+        sumY += point.y
+
+    }
+
+    let avgX = (sumX/points.length).toFixed(1);
+    let avgY = (sumY/points.length).toFixed(1);
+
+    return { maxX, minX, maxY, minY, avgX, avgY };
 }

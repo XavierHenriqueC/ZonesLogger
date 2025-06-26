@@ -11,19 +11,23 @@ import {
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 import BeaconWrite from './BeaconWrite';
+import ViewData from './ViewData';
 import { useBleLog } from '../hooks/useBleLog';
 
 interface propsInterface {
     device: Peripheral;
     connectedStatus: (state: boolean) => void;
-    handleCancel: () => void;
+    handleCancelConnect: () => void;
 }
 
-const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancel }) => {
+const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleCancelConnect }) => {
 
     const [screen, setScreen] = useState<number>(0)
+    const { showMessage, hideMessage } = usePopup();
+
     const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData } = useBle();
-    const { downloadLog, logs, clearLogs } = useBleLog()
+    const [demo, setDemo] = useState(false)
+    const { downloadLog, logs, clearLogs, demoLogs } = useBleLog()
 
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -32,12 +36,6 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb';
     const temperatureUIDD = '00002a1c-0000-1000-8000-00805f9b34fb';
-
-    const { showMessage, hideMessage } = usePopup();
-
-    useEffect(() => {
-        console.log(logs)
-    },[logs])
 
     useEffect(() => {
 
@@ -54,7 +52,11 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         };
 
         const handleDisconnect = (peripheral: { peripheral: string, status: number }) => {
-            console.log('Dispositivo desconectado:', peripheral.peripheral);
+
+            if (demo) {
+                return
+            }
+
             if (peripheral.peripheral === device.id) {
                 setIsConnected(false);
                 connectedStatus(false);
@@ -75,7 +77,6 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         );
 
         return () => {
-            disconnectDevice();
             disconnectListener.remove();
             updateValueListener.remove();
         };
@@ -83,6 +84,17 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const connectDevice = async () => {
         try {
+
+            //Demo
+            if (demo) {
+                setIsConnected(true);
+                connectedStatus(true);
+                setTemperature('23.5');
+                setHumidity('48.2');
+                return
+            }
+
+
             console.log('Tentando conectar...');
             setIsConnecting(true);
 
@@ -141,16 +153,20 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const disconnectDevice = async () => {
 
+        setScreen(0)
+        setIsConnected(false);
+        setIsConnecting(false)
+        setTemperature('--');
+        setHumidity('--');
+
+        if (demo) {
+            return
+        }
+
         try {
 
             console.log('Desconectando...');
             await BleManager.disconnect(device.id);
-
-            setScreen(0)
-            setIsConnected(false);
-            setIsConnecting(false)
-            setTemperature('--');
-            setHumidity('--');
             console.log('Dispositivo desconectado');
 
         } catch (error) {
@@ -163,12 +179,21 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         setScreen(screen)
     }
 
-    const handleCancelConfig = () => {
+    const handleCancelButton = async () => {
+        try {
+           await disconnectDevice()
+           handleCancelConnect()
+        } catch (e) {
+            console.log(e)
+        }
+    }
+
+    const handleCancel = () => {
         setScreen(0)
         hideMessage()
     }
 
-    const handleDownload = async ()  => {
+    const handleDownload = async () => {
         try {
             await downloadLog(device)
         } catch (e) {
@@ -183,6 +208,12 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         }
     }, [radioState]);
 
+    useEffect(() => {
+        if (device.name === 'DEMO') {
+            setDemo(true)
+        }
+    }, [device])
+
     return (
 
         radioState ? (
@@ -195,7 +226,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                         <Text style={isConnected ? styles.stateOn : styles.stateOff}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
                     </View>
                     <View style={styles.buttons}>
-                        <Button disabled={isConnected || isConnecting} title='Cancel' onPress={handleCancel} />
+                        <Button disabled={isConnected || isConnecting} title='Cancel' onPress={handleCancelButton} />
                         {isConnected ? (
                             <Button title="Disconnect" onPress={disconnectDevice} />
                         ) : (
@@ -232,9 +263,14 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
                                             </Text>
                                         </View>
                                     </View>
-                                    <View style={styles.bodyButtons}>
+                                    <View style={styles.buttons}>
                                         <Button title='Config. Sensor' onPress={() => handleNav(1)} />
                                         <Button title='Download Data' onPress={() => handleDownload()} />
+                                        {demo ? (
+                                            demoLogs.length > 0 && <Button title='View Data' onPress={() => handleNav(2)} />
+                                        ) : (
+                                            logs.length > 0 && <Button title='View Data' onPress={() => handleNav(2)} />
+                                        )}
                                     </View>
                                 </>
                             }
@@ -245,7 +281,12 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
                 {/* Config Page */}
                 {screen === 1 && isConnected &&
-                    <BeaconWrite device={device} cancelConfig={handleCancelConfig}></BeaconWrite>
+                    <BeaconWrite device={device} cancel={handleCancel}></BeaconWrite>
+                }
+
+                {/* View Data Page */}
+                {screen === 2 && isConnected &&
+                    <ViewData data={demo ? demoLogs : logs} cancel={handleCancel}></ViewData>
                 }
 
             </View>
@@ -263,7 +304,6 @@ export default BeaconRead;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
         minWidth: '100%',
         gap: 20,
     },
@@ -273,7 +313,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center'
     },
     header: {
-        gap: 20,
+        gap: 10,
         justifyContent: 'flex-start',
         alignItems: 'center',
         height: 'auto',
@@ -285,13 +325,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         borderBottomWidth: 1,
         borderColor: '#00BFFF',
-        padding: 10
+        padding: 5
     },
     buttons: {
         minWidth: '100%',
         justifyContent: 'space-between',
         height: 'auto',
-        flexDirection: 'row'
+        flexDirection: 'column',
+        gap: 10
     },
     title: {
         fontSize: 22,
@@ -320,13 +361,6 @@ const styles = StyleSheet.create({
         gap: 10,
         alignItems: 'flex-start',
         justifyContent: 'center',
-    },
-    bodyButtons: {
-        height: 'auto',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexDirection: 'row',
-        minWidth: '100%',
     },
     labelContainer: {
         height: 'auto',

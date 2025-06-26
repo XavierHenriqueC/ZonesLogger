@@ -12,10 +12,10 @@ import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 
 interface propsInterface {
-
+  cancel: () => void
 }
 
-const ScanPage: React.FC<propsInterface> = ({ }) => {
+const ScanPage: React.FC<propsInterface> = ({ cancel }) => {
 
     const [screen, setScreen] = useState<number>(0)
     const { radioState, requestRadioEnable } = useBle()
@@ -51,7 +51,13 @@ const ScanPage: React.FC<propsInterface> = ({ }) => {
             {screen === 0 &&
                 <>
                     {radioState ? (
-                        <BLEScanner handleSelectDevice={handleSelectDevice}></BLEScanner>
+                        
+                        <>
+                            <BLEScanner handleSelectDevice={handleSelectDevice}></BLEScanner>
+                            <Button title='Cancel' onPress={cancel}></Button>
+                        </>
+                        
+                        
                     ) : (
 
                         <View style={styles.bluetoothOff}>
@@ -66,7 +72,7 @@ const ScanPage: React.FC<propsInterface> = ({ }) => {
 
             {/* DevicePage */}
             {screen === 1 && deviceSelected &&
-                <BeaconRead device={deviceSelected} connectedStatus={checkConnectedStatus} handleCancel={handleCancel}></BeaconRead>
+                <BeaconRead device={deviceSelected} connectedStatus={checkConnectedStatus} handleCancelConnect={handleCancel}></BeaconRead>
             }
 
 
@@ -79,6 +85,7 @@ export default ScanPage;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        padding: 10
     },
     bluetoothOff: {
         flex: 1,

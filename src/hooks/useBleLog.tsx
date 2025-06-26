@@ -4,9 +4,12 @@ import { Buffer } from 'buffer';
 import { SensorData, SensorDataType, buildCommand, LogControl, LogControlType } from '../../src/proto/SensorData';
 import { useBle } from '../../context/BleContext';
 import protobuf from 'protobufjs';
+import { usePopup } from '../../context/PopupContext';
+import { logDemo } from '../helpers/sensorDemo';
 
 interface UseBleLog {
     logs: SensorDataType[];
+    demoLogs: SensorDataType[];
     downloadLog: (device: Peripheral) => Promise<void>;
     clearLogs: () => void;
     isDownloading: boolean;
@@ -16,6 +19,7 @@ interface UseBleLog {
 export const useBleLog = (): UseBleLog => {
 
     const { bleManagerEmitter } = useBle();
+    const { showMessage } = usePopup()
 
     const [logs, setLogs] = useState<SensorDataType[]>([]);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -27,6 +31,9 @@ export const useBleLog = (): UseBleLog => {
     const serviceUUID = '00001809-0000-1000-8000-00805f9b34fb';
     const logCharUUID = '00002a1d-0000-1000-8000-00805f9b34fb';
     const logControlCharUUID = '00002a1f-0000-1000-8000-00805f9b34fb';
+
+
+    const [demoLogs, setDemologs] = useState<SensorDataType[]>([]);
 
     useEffect(() => {
         const updateListener = bleManagerEmitter.addListener(
@@ -89,7 +96,16 @@ export const useBleLog = (): UseBleLog => {
     };
 
     const downloadLog = async (device: Peripheral) => {
+
+        if(device.name === 'DEMO') {
+            setDemologs(logDemo)
+            showMessage(`Download Concluido! Registros: ${logDemo.length}`, 'success')
+            return
+        }
+
+
         try {
+
             setIsDownloading(true);
             setError(null);
             setLogs([]);
@@ -141,6 +157,7 @@ export const useBleLog = (): UseBleLog => {
 
     return {
         logs,
+        demoLogs,
         downloadLog,
         clearLogs,
         isDownloading,

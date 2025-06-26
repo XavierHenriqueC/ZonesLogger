@@ -97,6 +97,22 @@ const BLEScanner: React.FC<propsInterface> = ({ handleSelectDevice }) => {
         </TouchableOpacity>
     );
 
+    const handleDemo = () => {
+
+        const device: Peripheral = {
+            id: '00:00:00:00:00:00',
+            rssi: -80,
+            name: 'DEMO',
+            advertising: {
+                isConnectable: true,
+                serviceUUIDs: ['1809'],
+            },
+        }
+
+        handleSelect(device)
+
+    }
+
     return (
         <View style={styles.container}>
             <View style={styles.animation}>
@@ -105,6 +121,7 @@ const BLEScanner: React.FC<propsInterface> = ({ handleSelectDevice }) => {
             <View style={styles.middle}>
                 <Text style={styles.text}>Sensors found: {devicesFound.length}</Text>
                 <Button title={scanning ? 'Scanning...' : 'Refresh'} onPress={startScan} />
+                <Button title={'Demo'} onPress={handleDemo} />
             </View>
             <FlatList
                 style={styles.list}
@@ -123,7 +140,6 @@ export default BLEScanner;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
         minWidth: '100%'
     },
     animation: {
@@ -154,13 +170,14 @@ const styles = StyleSheet.create({
         color: '#fff'
     },
     middle: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: '100%',
+        minWidth: '100%',
+        justifyContent: 'space-between',
         height: 'auto',
-        gap: 20,
+        flexDirection: 'column',
+        gap: 10
     },
     text: {
+        textAlign: 'center',
         marginTop: 5,
         color: '#fff'
     }
