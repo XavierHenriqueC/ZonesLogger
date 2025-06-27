@@ -10,7 +10,7 @@ import {
 import { SensorDataType } from '../proto/SensorData';
 import { usePopup } from '../../context/PopupContext';
 import LineChartWidget from './LineChartWidget';
-import { getMinMaxAvg } from '../helpers/helpers';
+import { getDateTime } from '../helpers/helpers';
 
 interface propsInterface {
     data: SensorDataType[]
@@ -24,7 +24,7 @@ const ViewData: React.FC<propsInterface> = ({ data, cancel }) => {
 
     const renderItem: ListRenderItem<SensorDataType> = ({ item }) => (
         <View style={styles.row}>
-            <Text style={[styles.rowText]}>{item.timestamp}</Text>
+            <Text style={[styles.rowText]}>{getDateTime(item.timestamp)}</Text>
             <Text style={[styles.rowText]}>{item.temperature} °C</Text>
             <Text style={[styles.rowText]}>{item.humidity} %</Text>
         </View>
@@ -34,6 +34,10 @@ const ViewData: React.FC<propsInterface> = ({ data, cancel }) => {
         setScreen(screen)
         hideMessage()
     }
+
+    useEffect(() => {
+        data.sort((a, b) => b.timestamp - a.timestamp)
+    },[data])
 
     return (
         <>
@@ -82,7 +86,7 @@ export default ViewData;
 const styles = StyleSheet.create({
     body: {
         flex: 1,
-        padding: 10,
+        paddingVertical: 10,
     },
     buttons: {
         minWidth: '100%',
@@ -99,10 +103,12 @@ const styles = StyleSheet.create({
         justifyContent: 'space-around',
         borderWidth: 1,
         borderColor: '#00BFFF',
+        alignItems: 'center'
     },
     listHeaderText: {
         fontWeight: 'bold',
         color: '#fff',
+        textAlign: 'center',
     },
 
     list: {
@@ -114,9 +120,11 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         borderWidth: 1,
         borderColor: '#00BFFF',
-        justifyContent: 'space-around'
+        justifyContent: 'space-around',
+        alignItems: 'center'
     },
     rowText: {
+        textAlign: 'center',
         color: '#fff',
     },
     id: {

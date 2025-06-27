@@ -40,17 +40,24 @@ export const generateBeaconAnimatedPositions = (): Position => {
 }
 
 export const getMinMaxAvg = (points: XYValue[]) => {
-    if (points.length === 0) {
-        throw new Error("O array de pontos está vazio.");
-    }
 
-    let maxX = points[0].x;
-    let minX = points[0].x;
-    let maxY = points[0].y;
-    let minY = points[0].y;
-
+    let maxX = 0;
+    let minX = 0;
+    let maxY = 0;
+    let minY = 0;
     let sumX = 0;
     let sumY = 0;
+    let avgX = '0';
+    let avgY = '0'; 
+
+    if (points.length === 0) {
+        return { maxX, minX, maxY, minY, avgX, avgY}
+    }
+
+    maxX = points[0].x;
+    minX = points[0].x;
+    maxY = points[0].y;
+    minY = points[0].y;
 
     for (const point of points) {
         if (point.x > maxX) maxX = point.x;
@@ -63,8 +70,17 @@ export const getMinMaxAvg = (points: XYValue[]) => {
 
     }
 
-    let avgX = (sumX/points.length).toFixed(1);
-    let avgY = (sumY/points.length).toFixed(1);
+   avgX = (sumX / points.length).toFixed(1);
+   avgY = (sumY / points.length).toFixed(1);
 
     return { maxX, minX, maxY, minY, avgX, avgY };
+}
+
+export const getDateTime = (timestamp: number) => {
+    if (timestamp) {
+        const dateTime = new Date(timestamp * 1000).toLocaleString('br-BR', {day: '2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit'})
+        return dateTime
+    } else {
+        return "Invalid"
+    }
 }

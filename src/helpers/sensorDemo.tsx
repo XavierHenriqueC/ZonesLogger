@@ -1,40 +1,220 @@
 import { SensorDataType } from "../proto/SensorData";
 
 export const logDemo: SensorDataType[] = [
-    { temperature: 32.8, humidity: 41.5, interval: 60, timestamp: 60000 },
-    { temperature: 52.7, humidity: 73.9, interval: 60, timestamp: 120000 },
-    { temperature: 71.2, humidity: 13.7, interval: 60, timestamp: 180000 },
-    { temperature: 2.6, humidity: 78.3, interval: 60, timestamp: 240000 },
-    { temperature: 37.5, humidity: 21.3, interval: 60, timestamp: 300000 },
-    { temperature: 26.4, humidity: 17.1, interval: 60, timestamp: 360000 },
-    { temperature: 54.8, humidity: 8.1, interval: 60, timestamp: 420000 },
-    { temperature: 51.1, humidity: 61.3, interval: 60, timestamp: 480000 },
-    { temperature: 8.5, humidity: 33.5, interval: 60, timestamp: 540000 },
-    { temperature: 74.3, humidity: 3.0, interval: 60, timestamp: 600000 },
-    { temperature: 11.5, humidity: 49.0, interval: 60, timestamp: 660000 },
-    { temperature: 46.9, humidity: 70.6, interval: 60, timestamp: 720000 },
-    { temperature: 39.9, humidity: 54.2, interval: 60, timestamp: 780000 },
-    { temperature: 3.0, humidity: 47.4, interval: 60, timestamp: 840000 },
-    { temperature: 71.0, humidity: 73.5, interval: 60, timestamp: 900000 },
-    { temperature: 48.5, humidity: 38.7, interval: 60, timestamp: 960000 },
-    { temperature: 14.4, humidity: 49.7, interval: 60, timestamp: 1020000 },
-    { temperature: 42.0, humidity: 34.0, interval: 60, timestamp: 1080000 },
-    { temperature: 51.2, humidity: 55.1, interval: 60, timestamp: 1140000 },
-    { temperature: 28.3, humidity: 55.3, interval: 60, timestamp: 1200000 },
-    { temperature: 65.8, humidity: 58.7, interval: 60, timestamp: 1260000 },
-    { temperature: 28.7, humidity: 25.0, interval: 60, timestamp: 1320000 },
-    { temperature: 62.6, humidity: 39.8, interval: 60, timestamp: 1380000 },
-    { temperature: 30.8, humidity: 74.6, interval: 60, timestamp: 1440000 },
-    { temperature: 7.1, humidity: 64.5, interval: 60, timestamp: 1500000 },
-    { temperature: 58.8, humidity: 6.0, interval: 60, timestamp: 1560000 },
-    { temperature: 34.5, humidity: 41.6, interval: 60, timestamp: 1620000 },
-    { temperature: 47.1, humidity: 75.4, interval: 60, timestamp: 1680000 },
-    { temperature: 79.3, humidity: 14.1, interval: 60, timestamp: 1740000 },
-    { temperature: 13.6, humidity: 16.7, interval: 60, timestamp: 1800000 },
-    { temperature: 74.9, humidity: 10.5, interval: 60, timestamp: 1860000 },
-    { temperature: 2.7, humidity: 39.9, interval: 60, timestamp: 1920000 },
-    { temperature: 62.7, humidity: 72.0, interval: 60, timestamp: 1980000 },
-    { temperature: 70.9, humidity: 49.9, interval: 60, timestamp: 2040000 },
-    { temperature: 19.4, humidity: 65.2, interval: 60, timestamp: 2100000 },
-    { temperature: 44.3, humidity: 11.8, interval: 60, timestamp: 2160000 }
+  {
+    temperature: 56.5,
+    humidity: 21.0,
+    interval: 60,
+    timestamp: 1750260096
+  },
+  {
+    temperature: 22.0,
+    humidity: 41.3,
+    interval: 60,
+    timestamp: 1748530456
+  },
+  {
+    temperature: 51.3,
+    humidity: 52.2,
+    interval: 60,
+    timestamp: 1749347723
+  },
+  {
+    temperature: 29.8,
+    humidity: 18.0,
+    interval: 60,
+    timestamp: 1748783672
+  },
+  {
+    temperature: 59.2,
+    humidity: 12.5,
+    interval: 60,
+    timestamp: 1748554351
+  },
+  {
+    temperature: 55.7,
+    humidity: 3.8,
+    interval: 60,
+    timestamp: 1750422326
+  },
+  {
+    temperature: 34.5,
+    humidity: 27.8,
+    interval: 60,
+    timestamp: 1750438173
+  },
+  {
+    temperature: 56.4,
+    humidity: 60.1,
+    interval: 60,
+    timestamp: 1750650555
+  },
+  {
+    temperature: 64.8,
+    humidity: 42.8,
+    interval: 60,
+    timestamp: 1750715056
+  },
+  {
+    temperature: 42.5,
+    humidity: 37.8,
+    interval: 60,
+    timestamp: 1748706948
+  },
+  {
+    temperature: 74.0,
+    humidity: 41.6,
+    interval: 60,
+    timestamp: 1749507056
+  },
+  {
+    temperature: 45.7,
+    humidity: 37.5,
+    interval: 60,
+    timestamp: 1749390322
+  },
+  {
+    temperature: 79.5,
+    humidity: 47.8,
+    interval: 60,
+    timestamp: 1748977184
+  },
+  {
+    temperature: 73.2,
+    humidity: 38.9,
+    interval: 60,
+    timestamp: 1750051562
+  },
+  {
+    temperature: 53.5,
+    humidity: 17.6,
+    interval: 60,
+    timestamp: 1750105747
+  },
+  {
+    temperature: 67.8,
+    humidity: 7.7,
+    interval: 60,
+    timestamp: 1750277028
+  },
+  {
+    temperature: 24.9,
+    humidity: 33.1,
+    interval: 60,
+    timestamp: 1749932876
+  },
+  {
+    temperature: 26.1,
+    humidity: 12.1,
+    interval: 60,
+    timestamp: 1751004233
+  },
+  {
+    temperature: 79.7,
+    humidity: 17.7,
+    interval: 60,
+    timestamp: 1750192960
+  },
+  {
+    temperature: 36.7,
+    humidity: 32.9,
+    interval: 60,
+    timestamp: 1750793953
+  },
+  {
+    temperature: 50.6,
+    humidity: 5.8,
+    interval: 60,
+    timestamp: 1750219077
+  },
+  {
+    temperature: 12.3,
+    humidity: 33.4,
+    interval: 60,
+    timestamp: 1749627280
+  },
+  {
+    temperature: 58.8,
+    humidity: 50.0,
+    interval: 60,
+    timestamp: 1750855465
+  },
+  {
+    temperature: 7.4,
+    humidity: 42.6,
+    interval: 60,
+    timestamp: 1750633205
+  },
+  {
+    temperature: 25.6,
+    humidity: 51.4,
+    interval: 60,
+    timestamp: 1750133752
+  },
+  {
+    temperature: 59.3,
+    humidity: 24.7,
+    interval: 60,
+    timestamp: 1751003236
+  },
+  {
+    temperature: 55.0,
+    humidity: 11.9,
+    interval: 60,
+    timestamp: 1749518343
+  },
+  {
+    temperature: 66.4,
+    humidity: 18.2,
+    interval: 60,
+    timestamp: 1750770497
+  },
+  {
+    temperature: 69.5,
+    humidity: 69.9,
+    interval: 60,
+    timestamp: 1748489383
+  },
+  {
+    temperature: 75.4,
+    humidity: 41.7,
+    interval: 60,
+    timestamp: 1750693129
+  },
+  {
+    temperature: 29.0,
+    humidity: 19.6,
+    interval: 60,
+    timestamp: 1749485655
+  },
+  {
+    temperature: 71.7,
+    humidity: 61.2,
+    interval: 60,
+    timestamp: 1749536458
+  },
+  {
+    temperature: 12.8,
+    humidity: 69.8,
+    interval: 60,
+    timestamp: 1750693832
+  },
+  {
+    temperature: 65.2,
+    humidity: 3.6,
+    interval: 60,
+    timestamp: 1749635337
+  },
+  {
+    temperature: 6.9,
+    humidity: 30.3,
+    interval: 60,
+    timestamp: 1749179321
+  },
+  {
+    temperature: 61.7,
+    humidity: 36.8,
+    interval: 60,
+    timestamp: 1750344193
+  }
 ];
