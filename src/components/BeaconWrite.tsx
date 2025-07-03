@@ -14,7 +14,7 @@ import { Buffer } from 'buffer';
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 
-import { SensorData } from '../proto/SensorData';
+import { SensorConfig } from '../proto/SensorData';
 
 interface propsInterface {
     device: Peripheral;
@@ -23,7 +23,7 @@ interface propsInterface {
 
 const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
 
-    const { BleManager, bleManagerEmitter, decodeData } = useBle();
+    const { BleManager, bleManagerEmitter, decodeDataConfig } = useBle();
     const [interval, setInterval] = useState<number>();
 
     const { showMessage } = usePopup();
@@ -41,7 +41,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
 
             try {
                 if (data.characteristic === intervalUIDD) {
-                    const values = decodeData(data.value)
+                    const values = decodeDataConfig(data.value)
 
                     if (values.interval) {
                         setInterval(values.interval)
@@ -72,7 +72,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
 
         try {
             const value = await BleManager.read(device.id, serviceUIDD, intervalUIDD);
-            const values = decodeData(value)
+            const values = decodeDataConfig(value)
 
             if (values.interval) {
                 setInterval(values.interval)
@@ -96,12 +96,12 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
 
 
             // Cria mensagem com o campo interval preenchido
-            const message = SensorData.create({
+            const message = SensorConfig.create({
                 interval: interval,
             });
 
             // Serializa com protobuf
-            const buffer = SensorData.encode(message).finish();
+            const buffer = SensorConfig.encode(message).finish();
 
             await BleManager.write(
                 device.id,

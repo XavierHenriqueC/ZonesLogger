@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import BleManager, { Peripheral } from 'react-native-ble-manager';
 import { NativeEventEmitter, NativeModules } from 'react-native';
 import { Buffer } from 'buffer';
-import { SensorData, SensorDataType, buildCommand } from '../src/proto/SensorData';
+import { SensorConfig, SensorConfigType, SensorData, SensorDataType, buildCommand } from '../src/proto/SensorData';
 import { usePopup } from './PopupContext'
 
 interface BleContextType {
@@ -13,7 +13,8 @@ interface BleContextType {
     radioState: boolean;
     devicesFound: Peripheral[];
     setDevicesFound: React.Dispatch<React.SetStateAction<Peripheral[]>>;
-    decodeData: (value: number[]) => SensorDataType;
+    decodeDataSensor: (value: number[]) => SensorDataType;
+    decodeDataConfig: (value: number[]) => SensorConfigType;
 }
 
 export type BleData = {
@@ -63,10 +64,17 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
     };
 
-    const decodeData = (value: number[]): SensorDataType => {
+    const decodeDataSensor = (value: number[]): SensorDataType => {
         const buffer = Buffer.from(value);
         const decoded = SensorData.decode(buffer);
         const decodedObj = SensorData.toObject(decoded) as SensorDataType;
+        return decodedObj;
+    };
+
+    const decodeDataConfig = (value: number[]): SensorConfigType => {
+        const buffer = Buffer.from(value);
+        const decoded = SensorConfig.decode(buffer);
+        const decodedObj = SensorConfig.toObject(decoded) as SensorConfigType;
         return decodedObj;
     };
 
@@ -78,7 +86,8 @@ export const BleProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             devicesFound,
             setDevicesFound,
             requestRadioEnable,
-            decodeData,
+            decodeDataSensor,
+            decodeDataConfig
         }}>
             {children}
         </BleContext.Provider>

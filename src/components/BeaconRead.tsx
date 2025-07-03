@@ -25,7 +25,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     const [screen, setScreen] = useState<number>(0)
     const { showMessage, hideMessage } = usePopup();
 
-    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeData } = useBle();
+    const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeDataSensor } = useBle();
     const [demo, setDemo] = useState(false)
     const { downloadLog, logs, clearLogs, demoLogs } = useBleLog()
 
@@ -42,7 +42,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
         const handleUpdateValue = (data: BleData) => {
             try {
                 if (data.characteristic === temperatureUIDD) {
-                    const values = decodeData(data.value)
+                    const values = decodeDataSensor(data.value)
                     setTemperature(values.temperature.toFixed(1));
                     setHumidity(values.humidity.toFixed(1));
                 }
@@ -140,7 +140,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
         try {
             const value = await BleManager.read(device.id, serviceUIDD, temperatureUIDD);
-            const values = decodeData(value)
+            const values = decodeDataSensor(value)
             console.log(values)
             setTemperature(values.temperature.toFixed(1));
             setHumidity(values.humidity.toFixed(1));
