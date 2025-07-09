@@ -83,7 +83,7 @@ const LineChartWidget: React.FC<propsInterface> = ({ data }) => {
                             tempData.length > 0 &&
                             <Line
                                 tooltipComponent={
-                                    <Tooltip theme={{ label: { color: 'white' }, shape: { color: '#0f0' } }} />
+                                    <Tooltip theme={{ label: { color: 'white' }, shape: { color: '#0f0' }, formatter: (v) => v.y.toFixed(1) }} />
                                 }
                                 data={tempData}
                                 theme={{ stroke: { color: '#0f0', width: 2 }, scatter: { default: { width: 4, height: 4, rx: 2 } } }}
@@ -94,7 +94,7 @@ const LineChartWidget: React.FC<propsInterface> = ({ data }) => {
                             humdData.length > 0 &&
                             <Line
                                 tooltipComponent={
-                                    <Tooltip theme={{ label: { color: 'white' }, shape: { color: '#ffa502' } }} />
+                                    <Tooltip theme={{ label: { color: 'white' }, shape: { color: '#ffa502' }, formatter: (v) => v.y.toFixed(1) }} />
                                 }
                                 data={humdData}
                                 theme={{ stroke: { color: '#ffa502', width: 2 }, scatter: { default: { width: 4, height: 4, rx: 2 } } }}
@@ -119,14 +119,14 @@ const LineChartWidget: React.FC<propsInterface> = ({ data }) => {
                     <View style={styles.statisticsBody}>
                         <View style={styles.statisticsUnit}>
                             <Text style={styles.statisticsLabel}>Temperature</Text>
-                            <Text style={styles.statisticsValue}>Min: {getMinMaxAvg(tempData).minY} °C</Text>
-                            <Text style={styles.statisticsValue}>Max: {getMinMaxAvg(tempData).maxY} °C</Text>
+                            <Text style={styles.statisticsValue}>Min: {getMinMaxAvg(tempData).minY.toFixed(1)} °C</Text>
+                            <Text style={styles.statisticsValue}>Max: {getMinMaxAvg(tempData).maxY.toFixed(1)} °C</Text>
                             <Text style={styles.statisticsValue}>Avg: {getMinMaxAvg(tempData).avgY} °C</Text>
                         </View>
                         <View style={styles.statisticsUnit}>
                             <Text style={styles.statisticsLabel}>Humidity</Text>
-                            <Text style={styles.statisticsValue}>Min: {getMinMaxAvg(tempData).minY} %</Text>
-                            <Text style={styles.statisticsValue}>Max: {getMinMaxAvg(tempData).maxY} %</Text>
+                            <Text style={styles.statisticsValue}>Min: {getMinMaxAvg(tempData).minY.toFixed(1)} %</Text>
+                            <Text style={styles.statisticsValue}>Max: {getMinMaxAvg(tempData).maxY.toFixed(1)} %</Text>
                             <Text style={styles.statisticsValue}>Avg: {getMinMaxAvg(tempData).avgY} %</Text>
                         </View>
                     </View>

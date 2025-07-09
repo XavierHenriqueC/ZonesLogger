@@ -25,8 +25,8 @@ const ViewData: React.FC<propsInterface> = ({ data, cancel }) => {
     const renderItem: ListRenderItem<SensorDataType> = ({ item }) => (
         <View style={styles.row}>
             <Text style={[styles.rowText]}>{getDateTime(item.timestamp)}</Text>
-            <Text style={[styles.rowText]}>{item.temperature} °C</Text>
-            <Text style={[styles.rowText]}>{item.humidity} %</Text>
+            <Text style={[styles.rowText]}>{item.temperature.toFixed(1)} °C</Text>
+            <Text style={[styles.rowText]}>{item.humidity.toFixed(1)} %</Text>
         </View>
     );
 
