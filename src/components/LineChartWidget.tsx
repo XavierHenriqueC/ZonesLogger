@@ -125,9 +125,9 @@ const LineChartWidget: React.FC<propsInterface> = ({ data }) => {
                         </View>
                         <View style={styles.statisticsUnit}>
                             <Text style={styles.statisticsLabel}>Humidity</Text>
-                            <Text style={styles.statisticsValue}>Min: {getMinMaxAvg(tempData).minY.toFixed(1)} %</Text>
-                            <Text style={styles.statisticsValue}>Max: {getMinMaxAvg(tempData).maxY.toFixed(1)} %</Text>
-                            <Text style={styles.statisticsValue}>Avg: {getMinMaxAvg(tempData).avgY} %</Text>
+                            <Text style={styles.statisticsValue}>Min: {getMinMaxAvg(humdData).minY.toFixed(1)} %</Text>
+                            <Text style={styles.statisticsValue}>Max: {getMinMaxAvg(humdData).maxY.toFixed(1)} %</Text>
+                            <Text style={styles.statisticsValue}>Avg: {getMinMaxAvg(humdData).avgY} %</Text>
                         </View>
                     </View>
                 </View>

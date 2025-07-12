@@ -9,8 +9,8 @@ interface UseBleLog {
     logs: SensorDataType[];
     demoLogs: SensorDataType[];
     downloadLog: (device: Peripheral) => Promise<void>;
-    clearLogs: () => void;
-    process: {current: number, total: number};
+    clearLogs: (device: Peripheral) => void;
+    process: { current: number, total: number };
     isDownloading: boolean;
     downloadError: string | null;
 }
@@ -24,7 +24,7 @@ export const useBleLog = (): UseBleLog => {
     const [isDownloading, setIsDownloading] = useState(false);
     const [downloadError, setDownloadError] = useState<string | null>(null);
     const [expectedTotal, setExpectedTotal] = useState<number | null>(null);
-    const [process, setProcess] = useState<{current: number, total: number}>({current: 0, total: 0})
+    const [process, setProcess] = useState<{ current: number, total: number }>({ current: 0, total: 0 })
 
     const deviceRef = useRef<Peripheral | null>(null);
     const currentStep = useRef<'idle' | 'waiting_length' | 'receiving' | 'completed'>('idle');
@@ -40,11 +40,11 @@ export const useBleLog = (): UseBleLog => {
 
             if (data.characteristic.toLowerCase() === logControlCharUUID.toLowerCase()) {
                 try {
-                    
+
                     const values = decodeLogControl(data.value)
                     console.log('Total logs informados:', values.length);
                     setExpectedTotal(values.length);
-                    setProcess({...process, total: values.length})
+                    setProcess({ ...process, total: values.length })
 
                     if (currentStep.current === 'waiting_length') {
                         currentStep.current = 'receiving';
@@ -71,7 +71,7 @@ export const useBleLog = (): UseBleLog => {
                         const unique = !prev.some(e => e.timestamp === values.timestamp);
                         return unique ? [...prev, values] : prev;
                     });
-                    setProcess({...process, current: logs.length + 1})
+                    setProcess({ ...process, current: logs.length + 1 })
 
                     resetTimeout();
 
@@ -186,14 +186,26 @@ export const useBleLog = (): UseBleLog => {
         }
     };
 
-    const clearLogs = () => {
+    const clearLogs = async (device: Peripheral) => {
         setLogs([]);
         setExpectedTotal(null);
+
+        await BleManager.retrieveServices(device.id);
+        await BleManager.startNotification(device.id, serviceUUID, logControlCharUUID);
+
+        const clearBuffer = buildCommand(2); // CLEAR
+        await BleManager.write(
+            device.id,
+            serviceUUID,
+            logControlCharUUID,
+            Array.from(clearBuffer)
+        );
+
     };
 
     useEffect(() => {
         console.log(process)
-    },[process])
+    }, [process])
 
     return {
         logs,

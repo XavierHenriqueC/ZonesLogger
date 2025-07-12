@@ -11,6 +11,7 @@ import Slider from '@react-native-community/slider';
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
 import { SensorConfig } from '../proto/SensorData';
+import { useBleLog } from '../hooks/useBleLog';
 
 interface propsInterface {
     device: Peripheral;
@@ -23,6 +24,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
     const [interval, setInterval] = useState<number>();
 
     const { showMessage } = usePopup();
+    const { clearLogs } = useBleLog()
 
     const serviceUIDD = '00001809-0000-1000-8000-00805f9b34fb'; //1809
     const intervalUIDD = '00002a1e-0000-1000-8000-00805f9b34fb';  // interval (READ + WRITE)
@@ -113,7 +115,7 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
             console.warn('Erro ao enviar interval:', error);
             showMessage(`${error}`, 'error');
         } finally {
-            if(device.name !== "DEMO") {
+            if (device.name !== "DEMO") {
                 retrieveData()
             }
         }
@@ -144,7 +146,11 @@ const BeaconWrite: React.FC<propsInterface> = ({ device, cancel }) => {
                         />
                         <Text style={styles.text}>{interval}</Text>
                     </View>
+                    <View style={styles.buttons}>
+                        <Button title="Clear Logs" onPress={() => clearLogs(device)} />
+                    </View>
                 </View>
+
             </View>
             <View style={styles.buttons}>
                 <Button title="Cancel" onPress={cancel} />
@@ -172,10 +178,9 @@ const styles = StyleSheet.create({
     bodyValues: {
         flexDirection: 'column',
         maxWidth: '100%',
-        borderBottomWidth: 1,
-        borderColor: '#00BFFF',
         alignItems: 'flex-start',
-        justifyContent: 'space-between'
+        justifyContent: 'space-between',
+        gap: 10
     },
     sliderContainer: {
         flexDirection: 'row',
