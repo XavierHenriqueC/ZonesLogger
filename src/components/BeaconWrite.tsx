@@ -7,13 +7,9 @@ import {
     StyleSheet,
     TextInput,
 } from 'react-native';
-
 import Slider from '@react-native-community/slider';
-
-import { Buffer } from 'buffer';
 import { Peripheral } from 'react-native-ble-manager';
 import { usePopup } from '../../context/PopupContext';
-
 import { SensorConfig } from '../proto/SensorData';
 
 interface propsInterface {

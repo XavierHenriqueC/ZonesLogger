@@ -30,7 +30,7 @@ const App: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#006494',
-    flex: 1
+    flex: 1,
   }
 })
 

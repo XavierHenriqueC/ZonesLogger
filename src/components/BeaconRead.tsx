@@ -13,6 +13,7 @@ import { usePopup } from '../../context/PopupContext';
 import BeaconWrite from './BeaconWrite';
 import ViewData from './ViewData';
 import { useBleLog } from '../hooks/useBleLog';
+import ProcessDownload from './ProcessDownload';
 
 interface propsInterface {
     device: Peripheral;
@@ -27,7 +28,7 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const { BleManager, bleManagerEmitter, radioState, requestRadioEnable, decodeDataSensor } = useBle();
     const [demo, setDemo] = useState(false)
-    const { downloadLog, logs, clearLogs, demoLogs } = useBleLog()
+    const { downloadLog, isDownloading, process, logs, demoLogs, downloadError } = useBleLog()
 
     const [isConnected, setIsConnected] = useState(false);
     const [isConnecting, setIsConnecting] = useState(false);
@@ -181,8 +182,8 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
 
     const handleCancelButton = async () => {
         try {
-           await disconnectDevice()
-           handleCancelConnect()
+            await disconnectDevice()
+            handleCancelConnect()
         } catch (e) {
             console.log(e)
         }
@@ -217,79 +218,88 @@ const BeaconRead: React.FC<propsInterface> = ({ device, connectedStatus, handleC
     return (
 
         radioState ? (
-            <View style={styles.container}>
+            <>
 
-                <View style={styles.header}>
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.title}>{device.name || 'Beacon'}</Text>
-                        <Text style={styles.id}>{device.id}</Text>
-                        <Text style={isConnected ? styles.stateOn : styles.stateOff}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
+                <View style={styles.container}>
+
+                    <View style={styles.header}>
+                        <View style={styles.titleContainer}>
+                            <Text style={styles.title}>{device.name || 'Beacon'}</Text>
+                            <Text style={styles.id}>{device.id}</Text>
+                            <Text style={isConnected ? styles.stateOn : styles.stateOff}>{isConnected ? 'Connected' : 'Disconnected'}</Text>
+                        </View>
+                        <View style={styles.buttons}>
+                            <Button disabled={isConnected || isConnecting} title='Cancel' onPress={handleCancelButton} />
+                            {isConnected ? (
+                                <Button title="Disconnect" onPress={disconnectDevice} />
+                            ) : (
+                                <Button title={isConnecting ? 'Connecting...' : 'Connect'} onPress={connectDevice} />
+                            )}
+                        </View>
                     </View>
-                    <View style={styles.buttons}>
-                        <Button disabled={isConnected || isConnecting} title='Cancel' onPress={handleCancelButton} />
-                        {isConnected ? (
-                            <Button title="Disconnect" onPress={disconnectDevice} />
-                        ) : (
-                            <Button title={isConnecting ? 'Connecting...' : 'Connect'} onPress={connectDevice} />
-                        )}
-                    </View>
+
+                    {/* Read Page */}
+                    {screen === 0 &&
+                        <>
+                            <View style={styles.body}>
+                                {isConnected &&
+                                    <>
+                                        <View style={styles.bodyValues}>
+                                            <View style={styles.labelContainer}>
+                                                <Image
+                                                    source={require('../../assets/temperature_icon.png')}
+                                                    style={styles.icon}
+                                                    resizeMode="contain"
+                                                />
+                                                <Text style={styles.label}>
+                                                    {`${temperature} °C`}
+                                                </Text>
+                                            </View>
+                                            <View style={styles.labelContainer}>
+                                                <Image
+                                                    source={require('../../assets/humidity_icon.png')}
+                                                    style={styles.icon}
+                                                    resizeMode="contain"
+                                                />
+                                                <Text style={styles.label}>
+                                                    {`${humidity} %`}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <View style={styles.buttons}>
+                                            <Button title='Config. Sensor' onPress={() => handleNav(1)} />
+                                            <Button title='Download Data' onPress={() => handleDownload()} />
+                                            {demo ? (
+                                                demoLogs.length > 0 && <Button title='View Data' onPress={() => handleNav(2)} />
+                                            ) : (
+                                                logs.length > 0 && <Button title='View Data' onPress={() => handleNav(2)} />
+                                            )}
+                                        </View>
+                                    </>
+                                }
+                            </View>
+
+                        </>
+                    }
+
+                    {/* Config Page */}
+                    {screen === 1 && isConnected &&
+                        <BeaconWrite device={device} cancel={handleCancel}></BeaconWrite>
+                    }
+
+                    {/* View Data Page */}
+                    {screen === 2 && isConnected &&
+                        <ViewData data={demo ? demoLogs : logs} cancel={handleCancel}></ViewData>
+                    }
+
                 </View>
 
-                {/* Read Page */}
-                {screen === 0 &&
-                    <>
-                        <View style={styles.body}>
-                            {isConnected &&
-                                <>
-                                    <View style={styles.bodyValues}>
-                                        <View style={styles.labelContainer}>
-                                            <Image
-                                                source={require('../../assets/temperature_icon.png')}
-                                                style={styles.icon}
-                                                resizeMode="contain"
-                                            />
-                                            <Text style={styles.label}>
-                                                {`${temperature} °C`}
-                                            </Text>
-                                        </View>
-                                        <View style={styles.labelContainer}>
-                                            <Image
-                                                source={require('../../assets/humidity_icon.png')}
-                                                style={styles.icon}
-                                                resizeMode="contain"
-                                            />
-                                            <Text style={styles.label}>
-                                                {`${humidity} %`}
-                                            </Text>
-                                        </View>
-                                    </View>
-                                    <View style={styles.buttons}>
-                                        <Button title='Config. Sensor' onPress={() => handleNav(1)} />
-                                        <Button title='Download Data' onPress={() => handleDownload()} />
-                                        {demo ? (
-                                            demoLogs.length > 0 && <Button title='View Data' onPress={() => handleNav(2)} />
-                                        ) : (
-                                            logs.length > 0 && <Button title='View Data' onPress={() => handleNav(2)} />
-                                        )}
-                                    </View>
-                                </>
-                            }
-                        </View>
-
-                    </>
+                {isDownloading &&
+                    <ProcessDownload process={process} error={downloadError}></ProcessDownload>
                 }
 
-                {/* Config Page */}
-                {screen === 1 && isConnected &&
-                    <BeaconWrite device={device} cancel={handleCancel}></BeaconWrite>
-                }
+            </>
 
-                {/* View Data Page */}
-                {screen === 2 && isConnected &&
-                    <ViewData data={demo ? demoLogs : logs} cancel={handleCancel}></ViewData>
-                }
-
-            </View>
         ) : (
             <View style={styles.radioDisabledContainer}>
                 <Text style={styles.text}>BLUETOOTH IS OFF!</Text>
@@ -306,6 +316,7 @@ const styles = StyleSheet.create({
         flex: 1,
         minWidth: '100%',
         gap: 20,
+        zIndex: 99
     },
     radioDisabledContainer: {
         flex: 1,

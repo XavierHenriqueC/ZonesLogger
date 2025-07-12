@@ -1,19 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import BleManager, { Peripheral } from 'react-native-ble-manager';
-import { Buffer } from 'buffer';
-import { SensorData, SensorDataType, buildCommand, LogControl, LogControlType } from '../../src/proto/SensorData';
+import { SensorDataType, buildCommand } from '../../src/proto/SensorData';
 import { BleData, useBle } from '../../context/BleContext';
 import { usePopup } from '../../context/PopupContext';
 import { logDemo } from '../helpers/sensorDemo';
-import protobuf from 'protobufjs';
 
 interface UseBleLog {
     logs: SensorDataType[];
     demoLogs: SensorDataType[];
     downloadLog: (device: Peripheral) => Promise<void>;
     clearLogs: () => void;
+    process: {current: number, total: number};
     isDownloading: boolean;
-    error: string | null;
+    downloadError: string | null;
 }
 
 export const useBleLog = (): UseBleLog => {
@@ -23,8 +22,9 @@ export const useBleLog = (): UseBleLog => {
     const [logs, setLogs] = useState<SensorDataType[]>([]);
     const [demoLogs, setDemologs] = useState<SensorDataType[]>([]);
     const [isDownloading, setIsDownloading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [downloadError, setDownloadError] = useState<string | null>(null);
     const [expectedTotal, setExpectedTotal] = useState<number | null>(null);
+    const [process, setProcess] = useState<{current: number, total: number}>({current: 0, total: 0})
 
     const deviceRef = useRef<Peripheral | null>(null);
     const currentStep = useRef<'idle' | 'waiting_length' | 'receiving' | 'completed'>('idle');
@@ -42,8 +42,9 @@ export const useBleLog = (): UseBleLog => {
                 try {
                     
                     const values = decodeLogControl(data.value)
-                    console.log('📦 Total logs informados:', values.length);
+                    console.log('Total logs informados:', values.length);
                     setExpectedTotal(values.length);
+                    setProcess({...process, total: values.length})
 
                     if (currentStep.current === 'waiting_length') {
                         currentStep.current = 'receiving';
@@ -59,7 +60,7 @@ export const useBleLog = (): UseBleLog => {
                         resetTimeout();
                     }
                 } catch (err) {
-                    console.warn('⚠️ Decode control error:', err);
+                    console.warn('Decode control error:', err);
                 }
             }
 
@@ -70,6 +71,7 @@ export const useBleLog = (): UseBleLog => {
                         const unique = !prev.some(e => e.timestamp === values.timestamp);
                         return unique ? [...prev, values] : prev;
                     });
+                    setProcess({...process, current: logs.length + 1})
 
                     resetTimeout();
 
@@ -79,7 +81,7 @@ export const useBleLog = (): UseBleLog => {
                         const received = logs.length + 1;
 
                         if (currentStep.current === 'receiving' && total !== null && received >= total) {
-                            console.log('✅ Todos os logs recebidos');
+                            console.log('Todos os logs recebidos');
                             currentStep.current = 'completed';
 
                             const stopBuffer = buildCommand(1); // STOP
@@ -103,9 +105,9 @@ export const useBleLog = (): UseBleLog => {
                                 Array.from(nextBuffer)
                             );
                         }
-                    }, 50); // pequeno delay para esperar `setLogs` se propagar
+                    }, 5); // pequeno delay para esperar `setLogs` se propagar
                 } catch (err) {
-                    console.warn('⚠️ Decode log error:', err);
+                    console.warn('Decode log error:', err);
                 }
             }
 
@@ -129,11 +131,11 @@ export const useBleLog = (): UseBleLog => {
 
     const checkCompletion = async () => {
         const total = expectedTotal;
-        if (total !== null && logs.length >= total) {
-            console.log('✅ Timeout detectou fim dos logs');
+        if (total !== null && logs.length + 1 >= total) {
+            console.log('Timeout detectou fim dos logs');
         } else {
-            console.warn('⚠️ Timeout: logs incompletos');
-            setError('Timeout na transferência dos logs.');
+            console.warn('Timeout: logs incompletos');
+            setDownloadError('Timeout na transferência dos logs.');
         }
 
         await stopLogNotification(deviceRef.current);
@@ -149,7 +151,7 @@ export const useBleLog = (): UseBleLog => {
 
         try {
             setIsDownloading(true);
-            setError(null);
+            setDownloadError(null);
             setLogs([]);
             setExpectedTotal(null);
             currentStep.current = 'waiting_length';
@@ -167,8 +169,8 @@ export const useBleLog = (): UseBleLog => {
                 Array.from(getLengthBuffer)
             );
         } catch (error) {
-            console.error('❌ Download error:', error);
-            setError(String(error));
+            console.error('Download error:', error);
+            setDownloadError(String(error));
             setIsDownloading(false);
         }
     };
@@ -178,9 +180,9 @@ export const useBleLog = (): UseBleLog => {
         try {
             await BleManager.stopNotification(device.id, serviceUUID, logCharUUID);
             await BleManager.stopNotification(device.id, serviceUUID, logControlCharUUID);
-            console.log('🛑 Notificações encerradas');
+            console.log('Notificações encerradas');
         } catch (error) {
-            console.warn('⚠️ Erro ao parar notificações:', error);
+            console.warn('Erro ao parar notificações:', error);
         }
     };
 
@@ -190,15 +192,16 @@ export const useBleLog = (): UseBleLog => {
     };
 
     useEffect(() => {
-        console.log(logs)
-    },[logs])
+        console.log(process)
+    },[process])
 
     return {
         logs,
         demoLogs,
         downloadLog,
         clearLogs,
+        process,
         isDownloading,
-        error,
+        downloadError,
     };
 };
